@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ATL — API Debug Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#070a0f; --bg2:#0b0f18; --bg3:#111826;
+  --border:#1a2236; --border2:#243050;
+  --accent:#00d4ff; --bull:#00e676; --bear:#ff3d57;
+  --orange:#ff9800; --gold:#ffd54f;
+  --text:#d0dff0; --dim:#6a85a8; --dim2:#3a4f6a;
+  --font-d:'Orbitron',monospace; --font-m:'Share Tech Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-m);font-size:12px;min-height:100vh;}
+.bg-grid{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(0,212,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.02) 1px,transparent 1px);
+  background-size:40px 40px;}
+.wrap{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:20px 24px;}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.logo{font-family:var(--font-d);font-size:1rem;font-weight:900;letter-spacing:4px;color:var(--accent);}
+.logo span{color:var(--dim2);}
+.hdr-sub{font-size:0.6rem;color:var(--dim);letter-spacing:3px;}
+.hdr-right{display:flex;align-items:center;gap:16px;}
+.run-btn{
+  font-family:var(--font-d);font-size:0.65rem;font-weight:700;letter-spacing:2px;
+  padding:10px 24px;border:1px solid var(--accent);color:var(--accent);
+  background:transparent;border-radius:4px;cursor:pointer;transition:all 0.2s;
+}
+.run-btn:hover{background:rgba(0,212,255,0.1);}
+.run-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.clear-btn{
+  font-family:var(--font-d);font-size:0.6rem;font-weight:700;letter-spacing:2px;
+  padding:10px 16px;border:1px solid var(--border2);color:var(--dim);
+  background:transparent;border-radius:4px;cursor:pointer;transition:all 0.2s;
+}
+.clear-btn:hover{border-color:var(--bear);color:var(--bear);}
+
+/* EXCHANGE TOGGLE */
+.ex-toggle{display:flex;gap:8px;margin-bottom:20px;}
+.ex-btn{
+  font-family:var(--font-d);font-size:0.58rem;font-weight:700;letter-spacing:2px;
+  padding:8px 20px;border-radius:4px;cursor:pointer;transition:all 0.2s;border:1px solid var(--border2);
+  color:var(--dim);background:var(--bg2);
+}
+.ex-btn.on-binance{border-color:rgba(255,152,0,0.5);color:var(--orange);background:rgba(255,152,0,0.06);}
+.ex-btn.on-bybit{border-color:rgba(0,212,255,0.5);color:var(--accent);background:rgba(0,212,255,0.06);}
+
+/* PROGRESS */
+.progress-bar{height:2px;background:var(--border);border-radius:1px;margin-bottom:20px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--accent);border-radius:1px;transition:width 0.3s ease;width:0;}
+
+/* SUMMARY STRIP */
+.summary{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;}
+.sum-card{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:10px 16px;min-width:120px;}
+.sum-label{font-size:0.55rem;color:var(--dim);letter-spacing:2px;margin-bottom:4px;}
+.sum-val{font-family:var(--font-d);font-size:1.1rem;font-weight:700;}
+.sum-val.a{color:var(--accent);}
+.sum-val.g{color:var(--bull);}
+.sum-val.r{color:var(--bear);}
+.sum-val.o{color:var(--orange);}
+
+/* ENDPOINT CARDS */
+.section-title{
+  font-family:var(--font-d);font-size:0.65rem;letter-spacing:3px;color:var(--dim);
+  margin:20px 0 12px;padding-left:8px;border-left:2px solid var(--accent);
+}
+.ep-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:8px;}
+.ep-card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.ep-head{
+  display:flex;align-items:center;gap:12px;padding:10px 14px;
+  cursor:pointer;user-select:none;transition:background 0.15s;
+}
+.ep-head:hover{background:rgba(255,255,255,0.02);}
+.ep-status{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;
+  background:var(--dim2);
+}
+.ep-status.ok{background:var(--bull);box-shadow:0 0 6px rgba(0,230,118,0.5);}
+.ep-status.fail{background:var(--bear);box-shadow:0 0 6px rgba(255,61,87,0.5);}
+.ep-status.warn{background:var(--orange);box-shadow:0 0 6px rgba(255,152,0,0.5);}
+.ep-status.pending{background:var(--dim);animation:blink 1s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+.ep-name{font-size:0.68rem;color:var(--text);letter-spacing:1px;flex:1;}
+.ep-tag{font-size:0.52rem;letter-spacing:1px;padding:2px 7px;border-radius:2px;}
+.tag-binance{background:rgba(255,152,0,0.1);color:var(--orange);border:1px solid rgba(255,152,0,0.2);}
+.tag-bybit{background:rgba(0,212,255,0.08);color:var(--accent);border:1px solid rgba(0,212,255,0.2);}
+.ep-ms{font-size:0.6rem;color:var(--dim);min-width:60px;text-align:right;}
+.ep-chevron{color:var(--dim2);font-size:0.7rem;transition:transform 0.2s;}
+.ep-card.open .ep-chevron{transform:rotate(90deg);}
+.ep-body{display:none;border-top:1px solid var(--border);padding:14px;}
+.ep-card.open .ep-body{display:block;}
+
+/* URL display */
+.ep-url{font-size:0.6rem;color:var(--dim);word-break:break-all;margin-bottom:10px;padding:6px 10px;background:var(--bg);border-radius:3px;border:1px solid var(--border);}
+
+/* Fields table */
+.fields-title{font-size:0.58rem;color:var(--dim);letter-spacing:2px;margin-bottom:6px;}
+.fields-table{width:100%;border-collapse:collapse;margin-bottom:12px;}
+.fields-table th{font-size:0.55rem;color:var(--dim2);letter-spacing:1.5px;text-align:left;padding:4px 8px;border-bottom:1px solid var(--border);}
+.fields-table td{font-size:0.62rem;padding:4px 8px;border-bottom:1px solid rgba(26,34,54,0.5);vertical-align:top;}
+.fields-table td:first-child{color:var(--gold);white-space:nowrap;}
+.fields-table td:nth-child(2){color:var(--accent);white-space:nowrap;}
+.fields-table td:nth-child(3){color:var(--text);word-break:break-all;}
+.fields-table td:nth-child(4){color:var(--dim);white-space:nowrap;}
+.fields-table tr:last-child td{border-bottom:none;}
+
+/* Raw JSON */
+.raw-toggle{font-size:0.55rem;color:var(--dim);letter-spacing:1px;cursor:pointer;text-decoration:underline;margin-bottom:6px;display:inline-block;}
+.raw-toggle:hover{color:var(--accent);}
+.raw-block{display:none;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:10px;font-size:0.6rem;color:var(--dim);overflow-x:auto;white-space:pre;max-height:300px;overflow-y:auto;line-height:1.6;}
+.raw-block.show{display:block;}
+
+/* Error block */
+.err-block{background:rgba(255,61,87,0.06);border:1px solid rgba(255,61,87,0.2);border-radius:3px;padding:10px;font-size:0.62rem;color:var(--bear);}
+
+/* Notes */
+.ep-notes{font-size:0.6rem;color:var(--dim);margin-top:8px;padding:8px;background:rgba(0,212,255,0.03);border:1px solid rgba(0,212,255,0.08);border-radius:3px;line-height:1.6;}
+.ep-notes strong{color:var(--accent);}
+
+/* Timeframe badges */
+.tf-wrap{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+.tf-badge{font-size:0.52rem;padding:2px 8px;border-radius:2px;border:1px solid var(--border2);color:var(--dim);}
+.tf-badge.avail{border-color:rgba(0,230,118,0.3);color:var(--bull);background:rgba(0,230,118,0.05);}
+
+/* Sample rows note */
+.sample-note{font-size:0.55rem;color:var(--dim2);letter-spacing:1px;margin-bottom:4px;}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="wrap">
+
+  <div class="hdr">
+    <div>
+      <div class="logo"><span>[</span>ATL<span>]</span> <span style="font-size:0.7rem;color:var(--dim);font-weight:400;letter-spacing:2px;">API DEBUG TOOL</span></div>
+      <div class="hdr-sub" style="margin-top:4px;">ENDPOINT DIAGNOSTICS · FIELD MAPPER · DATA AVAILABILITY REPORT</div>
+    </div>
+    <div class="hdr-right">
+      <button class="clear-btn" onclick="clearResults()">CLEAR</button>
+      <button class="run-btn" id="run-btn" onclick="runAll()">▶ RUN ALL TESTS</button>
+    </div>
+  </div>
+
+  <div class="ex-toggle">
+    <div class="ex-btn" id="ex-binance-lbl">⬤ BINANCE FUTURES</div>
+    <div class="ex-btn" id="ex-bybit-lbl">⬤ BYBIT LINEAR</div>
+  </div>
+
+  <div class="progress-bar"><div class="progress-fill" id="prog"></div></div>
+
+  <div class="summary" id="summary" style="display:none;">
+    <div class="sum-card"><div class="sum-label">TOTAL TESTS</div><div class="sum-val a" id="s-total">—</div></div>
+    <div class="sum-card"><div class="sum-label">PASSED</div><div class="sum-val g" id="s-pass">—</div></div>
+    <div class="sum-card"><div class="sum-label">FAILED</div><div class="sum-val r" id="s-fail">—</div></div>
+    <div class="sum-card"><div class="sum-label">WARNINGS</div><div class="sum-val o" id="s-warn">—</div></div>
+    <div class="sum-card"><div class="sum-label">AVG LATENCY</div><div class="sum-val a" id="s-lat">—</div></div>
+  </div>
+
+  <div id="results-wrap"></div>
+
+</div>
+
+<script>
+'use strict';
+
+// ── PROXY ──
+async function safeFetch(url, direct=false) {
+  if (direct) {
+    try {
+      const t0 = Date.now();
+      const r = await fetch(url, {cache:'no-store'});
+      const ms = Date.now() - t0;
+      if (!r.ok) return {ok:false, ms, status:r.status, error:`HTTP ${r.status}`};
+      const data = await r.json();
+      return {ok:true, ms, data};
+    } catch(e) { return {ok:false, ms:0, error:e.message}; }
+  }
+  const PROXIES = [
+    {name:'corsproxy.io', url:'https://corsproxy.io/?'},
+    {name:'codetabs',     url:'https://api.codetabs.com/v1/proxy?quest='},
+    {name:'thingproxy',  url:'https://thingproxy.freeboard.io/fetch/'},
+  ];
+  for (const p of PROXIES) {
+    try {
+      const t0 = Date.now();
+      const r = await fetch(p.url + encodeURIComponent(url), {cache:'no-store'});
+      const ms = Date.now() - t0;
+      if (!r.ok) continue;
+      const txt = await r.text();
+      let data;
+      try { const j = JSON.parse(txt); data = j.contents && typeof j.contents === 'string' ? JSON.parse(j.contents) : j; }
+      catch(e2) { continue; }
+      return {ok:true, ms, data, proxy:p.name};
+    } catch(e) { continue; }
+  }
+  return {ok:false, ms:0, error:'All proxies failed'};
+}
+
+// ── FIELD INSPECTOR ──
+function inspectFields(obj, maxDepth=1, depth=0) {
+  if (!obj || typeof obj !== 'object') return [];
+  const rows = [];
+  for (const [k, v] of Object.entries(obj)) {
+    const type = Array.isArray(v) ? `array[${v.length}]` : typeof v;
+    const sample = Array.isArray(v)
+      ? (v.length > 0 ? `[${JSON.stringify(v[0]).slice(0,80)}...]` : '[]')
+      : (typeof v === 'object' && v !== null ? '{...}' : String(v).slice(0,100));
+    rows.push({key: '  '.repeat(depth)+k, type, sample, depth});
+    if (depth < maxDepth && typeof v === 'object' && v !== null && !Array.isArray(v)) {
+      rows.push(...inspectFields(v, maxDepth, depth+1));
+    }
+  }
+  return rows;
+}
+
+function inspectArrayItem(arr, label='Item[0]') {
+  if (!Array.isArray(arr) || arr.length === 0) return [];
+  const item = arr[0];
+  if (typeof item !== 'object') return [{key:label, type:typeof item, sample:String(item)}];
+  return inspectFields(item, 2, 0);
+}
+
+// ── ENDPOINT DEFINITIONS ──
+// Each endpoint: {id, exchange, name, url, direct, notes, timeframes?, arrayPath?, parse}
+const ENDPOINTS = [
+
+  // ═══════ BINANCE ═══════
+
+  {
+    id:'bn-funding', exchange:'binance', name:'Premium Index (Funding Rate + Mark Price)',
+    url:'https://fapi.binance.com/fapi/v1/premiumIndex',
+    direct:false,
+    notes:`<strong>Fields available:</strong> symbol, markPrice, indexPrice, lastFundingRate, nextFundingTime, interestRate, time<br>
+           <strong>Key field:</strong> lastFundingRate (raw decimal, multiply ×100 for %). nextFundingTime is Unix ms.<br>
+           <strong>Coverage:</strong> All USDT/BUSD perpetuals. No timeframe param — always current epoch.`,
+    parse: (data) => {
+      const arr = Array.isArray(data) ? data : [];
+      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'root'};
+    }
+  },
+
+  {
+    id:'bn-oi', exchange:'binance', name:'Open Interest (Current)',
+    url:'https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT',
+    direct:false,
+    notes:`<strong>Fields:</strong> symbol, openInterest (in contracts), time.<br>
+           <strong>Limitation:</strong> Single symbol only — no bulk endpoint for all symbols at once.<br>
+           <strong>Usage:</strong> Must loop per symbol (rate-limited). Consider Bybit bulk endpoint instead.`,
+    parse: (data) => ({ items: inspectFields(data, 1), count:1, arrayPath:'root object' })
+  },
+
+  {
+    id:'bn-oi-hist', exchange:'binance', name:'Open Interest History (with timeframes)',
+    url:'https://fapi.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period=5m&limit=3',
+    direct:false,
+    timeframes:['5m','15m','30m','1h','2h','4h','6h','12h','1d'],
+    notes:`<strong>Fields:</strong> symbol, sumOpenInterest, sumOpenInterestValue (in USDT), timestamp.<br>
+           <strong>Timeframes available:</strong> 5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d<br>
+           <strong>Limit:</strong> Max 500 rows per request. Single symbol only.`,
+    parse: (data) => {
+      const arr = Array.isArray(data) ? data : [];
+      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'root'};
+    }
+  },
+
+  {
+    id:'bn-ls-ratio', exchange:'binance', name:'Long/Short Ratio (Global Accounts)',
+    url:'https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=3',
+    direct:false,
+    timeframes:['5m','15m','30m','1h','2h','4h','6h','12h','1d'],
+    notes:`<strong>Fields:</strong> symbol, longShortRatio, longAccount (%), shortAccount (%), timestamp.<br>
+           <strong>This is account-level ratio</strong> — % of accounts that are net long vs net short.<br>
+           <strong>Also available:</strong> /topLongShortAccountRatio (top traders), /topLongShortPositionRatio (by position value).`,
+    parse: (data) => {
+      const arr = Array.isArray(data) ? data : [];
+      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'root'};
+    }
+  },
+
+  {
+    id:'bn-ls-top-acct', exchange:'binance', name:'Long/Short Ratio (Top Trader Accounts)',
+    url:'https://fapi.binance.com/futures/data/topLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=3',
+    direct:false,
+    timeframes:['5m','15m','30m','1h','2h','4h','6h','12h','1d'],
+    notes:`<strong>Top trader accounts</strong> — focuses on whales/large accounts.<br>
+           Same fields as global ratio. Useful for whale vs retail divergence signal.`,
+    parse: (data) => {
+      const arr = Array.isArray(data) ? data : [];
+      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'root'};
+    }
+  },
+
+  {
+    id:'bn-ls-top-pos', exchange:'binance', name:'Long/Short Ratio (Top Trader Positions)',
+    url:'https://fapi.binance.com/futures/data/topLongShortPositionRatio?symbol=BTCUSDT&period=5m&limit=3',
+    direct:false,
+    timeframes:['5m','15m','30m','1h','2h','4h','6h','12h','1d'],
+    notes:`<strong>Top trader positions by value</strong> — different from account count ratio.<br>
+           A whale with 1 account and $10M short counts much heavier here than in account ratio.`,
+    parse: (data) => {
+      const arr = Array.isArray(data) ? data : [];
+      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'root'};
+    }
+  },
+
+  {
+    id:'bn-volume', exchange:'binance', name:'Taker Buy/Sell Volume',
+    url:'https://fapi.binance.com/futures/data/takerlongshortRatio?symbol=BTCUSDT&period=5m&limit=3',
+    direct:false,
+    timeframes:['5m','15m','30m','1h','2h','4h','6h','12h','1d'],
+    notes:`<strong>Fields:</strong> buySellRatio, buyVol, sellVol, timestamp.<br>
+           <strong>Key insight:</strong> buySellRatio > 1 means aggressive buying (market orders). < 1 means aggressive selling.<br>
+           Excellent for detecting momentum shift — high sell volume during positive funding = distribution signal.`,
+    parse: (data) => {
+      const arr = Array.isArray(data) ? data : [];
+      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'root'};
+    }
+  },
+
+  {
+    id:'bn-ticker24', exchange:'binance', name:'24h Ticker (Volume + Price Change)',
+    url:'https://fapi.binance.com/fapi/v1/ticker/24hr',
+    direct:false,
+    notes:`<strong>Fields:</strong> symbol, priceChange, priceChangePercent, weightedAvgPrice, lastPrice, volume (contracts), quoteVolume (USDT), openPrice, highPrice, lowPrice, count (trades).<br>
+           <strong>Bulk endpoint</strong> — returns all symbols at once. High value for the scanner.<br>
+           <strong>quoteVolume</strong> = 24h trading volume in USDT — this is what traders refer to as "volume".`,
+    parse: (data) => {
+      const arr = Array.isArray(data) ? data : [];
+      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'root'};
+    }
+  },
+
+  {
+    id:'bn-basis', exchange:'binance', name:'Basis Rate (Futures vs Spot)',
+    url:'https://fapi.binance.com/futures/data/basis?symbol=BTCUSDT&contractType=PERPETUAL&period=5m&limit=3',
+    direct:false,
+    timeframes:['5m','15m','30m','1h','2h','4h','6h','12h','1d'],
+    notes:`<strong>Fields:</strong> indexPrice (spot), contractType, futuresPrice, basis (absolute diff), basisRate (%), timestamp.<br>
+           <strong>basisRate</strong> = (futuresPrice - indexPrice) / indexPrice × 100.<br>
+           Positive = futures premium over spot. Negative = futures discount (backwardation).`,
+    parse: (data) => {
+      const arr = Array.isArray(data) ? data : [];
+      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'root'};
+    }
+  },
+
+  {
+    id:'bn-spot-ticker', exchange:'binance', name:'Spot Ticker (for Inflow/Outflow proxy)',
+    url:'https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT',
+    direct:false,
+    notes:`<strong>Spot market 24h data.</strong> Not a direct inflow/outflow feed (that requires exchange wallets API).<br>
+           <strong>Proxy signal:</strong> If spot volume spikes while futures funding is high → selling pressure building.<br>
+           <strong>Fields:</strong> Same structure as futures ticker but from spot market.`,
+    parse: (data) => ({ items: inspectFields(data, 1), count:1, arrayPath:'root object' })
+  },
+
+  // ═══════ BYBIT ═══════
+
+  {
+    id:'bb-ticker', exchange:'bybit', name:'Linear Tickers (Funding + OI + Volume + Price)',
+    url:'https://api.bybit.com/v5/market/tickers?category=linear',
+    direct:true,
+    notes:`<strong>BULK endpoint — single call for all USDT perps.</strong><br>
+           <strong>Fields:</strong> symbol, lastPrice, indexPrice, markPrice, prevPrice24h, price24hPcnt, highPrice24h, lowPrice24h, prevPrice1h, openInterest, openInterestValue, turnover24h (USDT vol), volume24h (contracts), fundingRate, nextFundingTime, bid1Price, ask1Price, bid1Size, ask1Size.<br>
+           <strong>This is the most data-dense single endpoint</strong> — funding + OI + volume + price all at once.`,
+    parse: (data) => {
+      const arr = data?.result?.list || [];
+      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'result.list'};
+    }
+  },
+
+  {
+    id:'bb-oi', exchange:'bybit', name:'Open Interest History (with timeframes)',
+    url:'https://api.bybit.com/v5/market/open-interest?category=linear&symbol=BTCUSDT&intervalTime=5min&limit=3',
+    direct:true,
+    timeframes:['5min','15min','30min','1h','4h','1d'],
+    notes:`<strong>Fields:</strong> openInterest, openInterestValue (USDT), timestamp.<br>
+           <strong>Timeframes:</strong> 5min, 15min, 30min, 1h, 4h, 1d<br>
+           Single symbol only. Use to track OI trend over time (rising/falling).`,
+    parse: (data) => {
+      const arr = data?.result?.list || [];
+      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'result.list'};
+    }
+  },
+
+  {
+    id:'bb-funding-hist', exchange:'bybit', name:'Funding Rate History',
+    url:'https://api.bybit.com/v5/market/funding/history?category=linear&symbol=BTCUSDT&limit=3',
+    direct:true,
+    notes:`<strong>Fields:</strong> symbol, fundingRate, fundingRateTimestamp.<br>
+           Historical funding epochs (every 8h). Useful to see if rate has been extreme for multiple epochs.<br>
+           No timeframe param — each row is one 8h funding settlement.`,
+    parse: (data) => {
+      const arr = data?.result?.list || [];
+      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'result.list'};
+    }
+  },
+
+  {
+    id:'bb-ls-ratio', exchange:'bybit', name:'Long/Short Ratio',
+    url:'https://api.bybit.com/v5/market/account-ratio?category=linear&symbol=BTCUSDT&period=1h&limit=3',
+    direct:true,
+    timeframes:['5min','15min','30min','1h','4h','1d'],
+    notes:`<strong>Fields:</strong> symbol, buyRatio, sellRatio, timestamp.<br>
+           buyRatio = proportion of accounts net long. sellRatio = net short.<br>
+           <strong>Note:</strong> Bybit uses buyRatio/sellRatio naming (vs Binance longAccount/shortAccount).`,
+    parse: (data) => {
+      const arr = data?.result?.list || [];
+      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'result.list'};
+    }
+  },
+
+  {
+    id:'bb-kline', exchange:'bybit', name:'Kline / OHLCV (Price + Volume)',
+    url:'https://api.bybit.com/v5/market/kline?category=linear&symbol=BTCUSDT&interval=60&limit=3',
+    direct:true,
+    timeframes:['1','3','5','15','30','60','120','240','360','720','D','W','M'],
+    notes:`<strong>Fields (array):</strong> [startTime, openPrice, highPrice, lowPrice, closePrice, volume (contracts), turnover (USDT)]<br>
+           Intervals: 1,3,5,15,30,60,120,240,360,720 (minutes), D, W, M.<br>
+           Useful for price trend context alongside funding data.`,
+    parse: (data) => {
+      const arr = data?.result?.list || [];
+      const item = arr[0];
+      const fields = item ? [
+        {key:'[0] startTime',   type:'string', sample:item[0]},
+        {key:'[1] openPrice',   type:'string', sample:item[1]},
+        {key:'[2] highPrice',   type:'string', sample:item[2]},
+        {key:'[3] lowPrice',    type:'string', sample:item[3]},
+        {key:'[4] closePrice',  type:'string', sample:item[4]},
+        {key:'[5] volume',      type:'string', sample:item[5]+' (contracts)'},
+        {key:'[6] turnover',    type:'string', sample:item[6]+' (USDT)'},
+      ] : [];
+      return {items: fields, count: arr.length, arrayPath:'result.list (each row is array)'};
+    }
+  },
+
+  {
+    id:'bb-ins-info', exchange:'bybit', name:'Instrument Info (Symbol Metadata)',
+    url:'https://api.bybit.com/v5/market/instruments-info?category=linear&symbol=BTCUSDT',
+    direct:true,
+    notes:`<strong>Fields:</strong> symbol, contractType, status, baseCoin, quoteCoin, launchTime, deliveryTime, fundingInterval (minutes), unifiedMarginTrade, settleCoin + leverage/tick/lot size filters.<br>
+           <strong>fundingInterval</strong> = 480 (8h standard) or 60 (1h for some tokens). Important for rate annualization.`,
+    parse: (data) => {
+      const arr = data?.result?.list || [];
+      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'result.list'};
+    }
+  },
+
+];
+
+// ── STATE ──
+let results = {};
+let running = false;
+
+// ── RENDER SKELETON ──
+function renderSkeleton() {
+  const wrap = document.getElementById('results-wrap');
+  let html = '';
+
+  const binanceEps = ENDPOINTS.filter(e => e.exchange === 'binance');
+  const bybitEps   = ENDPOINTS.filter(e => e.exchange === 'bybit');
+
+  html += `<div class="section-title">BINANCE FUTURES ENDPOINTS (${binanceEps.length})</div><div class="ep-grid" id="grid-binance">`;
+  for (const ep of binanceEps) html += epSkeleton(ep);
+  html += '</div>';
+
+  html += `<div class="section-title">BYBIT LINEAR ENDPOINTS (${bybitEps.length})</div><div class="ep-grid" id="grid-bybit">`;
+  for (const ep of bybitEps) html += epSkeleton(ep);
+  html += '</div>';
+
+  wrap.innerHTML = html;
+}
+
+function epSkeleton(ep) {
+  const tagCls = ep.exchange === 'binance' ? 'tag-binance' : 'tag-bybit';
+  const tagLbl = ep.exchange === 'binance' ? 'BINANCE' : 'BYBIT';
+  return `<div class="ep-card" id="card-${ep.id}">
+    <div class="ep-head" onclick="toggleCard('${ep.id}')">
+      <span class="ep-status" id="dot-${ep.id}"></span>
+      <span class="ep-name">${ep.name}</span>
+      <span class="ep-tag ${tagCls}">${tagLbl}</span>
+      <span class="ep-ms" id="ms-${ep.id}">—</span>
+      <span class="ep-chevron">▶</span>
+    </div>
+    <div class="ep-body" id="body-${ep.id}">
+      <div class="ep-url">${ep.url}</div>
+      <div style="color:var(--dim);font-size:0.6rem;letter-spacing:1px;">NOT YET TESTED</div>
+    </div>
+  </div>`;
+}
+
+function toggleCard(id) {
+  const card = document.getElementById('card-'+id);
+  card.classList.toggle('open');
+}
+
+// ── RENDER RESULT ──
+function renderResult(ep, res) {
+  const dot  = document.getElementById('dot-'+ep.id);
+  const ms   = document.getElementById('ms-'+ep.id);
+  const body = document.getElementById('body-'+ep.id);
+
+  if (!res.ok) {
+    dot.className  = 'ep-status fail';
+    ms.textContent = 'FAIL';
+    body.innerHTML = `
+      <div class="ep-url">${ep.url}</div>
+      <div class="err-block">❌ FETCH FAILED — ${res.error || 'Unknown error'}<br>${res.proxy ? 'Last proxy tried: '+res.proxy : ''}${res.status ? '<br>HTTP Status: '+res.status : ''}</div>
+      <div class="ep-notes">${ep.notes}</div>`;
+    return;
+  }
+
+  dot.className  = 'ep-status ok';
+  ms.textContent = res.ms + 'ms';
+
+  let parsed;
+  try { parsed = ep.parse(res.data); } catch(e) { parsed = {items:[], count:0, arrayPath:'parse error: '+e.message}; }
+
+  const fieldsHtml = parsed.items.length > 0 ? `
+    <div class="fields-title">AVAILABLE FIELDS — Source: ${parsed.arrayPath} (${parsed.count} records)</div>
+    <table class="fields-table">
+      <thead><tr><th>FIELD</th><th>TYPE</th><th>SAMPLE VALUE</th></tr></thead>
+      <tbody>${parsed.items.map(f => `<tr>
+        <td>${f.key}</td>
+        <td>${f.type}</td>
+        <td>${escHtml(String(f.sample||'').slice(0,120))}</td>
+      </tr>`).join('')}</tbody>
+    </table>` : `<div style="color:var(--dim);font-size:0.6rem;margin-bottom:10px;">No fields parsed — check raw JSON</div>`;
+
+  const tfHtml = ep.timeframes ? `
+    <div class="fields-title" style="margin-top:8px;">AVAILABLE TIMEFRAMES</div>
+    <div class="tf-wrap">${ep.timeframes.map(t=>`<span class="tf-badge avail">${t}</span>`).join('')}</div>` : '';
+
+  const rawId = 'raw-'+ep.id;
+  const rawStr = JSON.stringify(res.data, null, 2).slice(0, 4000) + (JSON.stringify(res.data).length > 4000 ? '\n... (truncated)' : '');
+
+  body.innerHTML = `
+    <div class="ep-url">${ep.url}${res.proxy ? ' <span style="color:var(--dim2)">[via '+res.proxy+']</span>' : ' <span style="color:var(--bull)">[direct]</span>'}</div>
+    ${fieldsHtml}
+    ${tfHtml}
+    <div class="ep-notes" style="margin-top:10px;">${ep.notes}</div>
+    <div class="sample-note" style="margin-top:12px;">RAW RESPONSE SAMPLE (first ~4KB):</div>
+    <span class="raw-toggle" onclick="toggleRaw('${rawId}')">[ show / hide raw JSON ]</span>
+    <pre class="raw-block" id="${rawId}">${escHtml(rawStr)}</pre>`;
+}
+
+function toggleRaw(id) {
+  document.getElementById(id).classList.toggle('show');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── RUN ALL ──
+async function runAll() {
+  if (running) return;
+  running = true;
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  btn.textContent = '⟳ RUNNING...';
+
+  renderSkeleton();
+  document.getElementById('summary').style.display = 'none';
+
+  // Set pending dots
+  for (const ep of ENDPOINTS) {
+    document.getElementById('dot-'+ep.id).className = 'ep-status pending';
+    document.getElementById('ms-'+ep.id).textContent = '...';
+  }
+
+  // Label exchange status
+  document.getElementById('ex-binance-lbl').className = 'ex-btn';
+  document.getElementById('ex-bybit-lbl').className   = 'ex-btn';
+
+  let pass=0, fail=0, warn=0, totalMs=0, tested=0;
+
+  for (const ep of ENDPOINTS) {
+    const res = await safeFetch(ep.url, ep.direct);
+    results[ep.id] = res;
+    renderResult(ep, res);
+
+    if (res.ok)   { pass++; totalMs += res.ms; }
+    else          { fail++; }
+    tested++;
+
+    // Update progress
+    const pct = Math.round((tested / ENDPOINTS.length) * 100);
+    document.getElementById('prog').style.width = pct + '%';
+  }
+
+  // Exchange status labels
+  const bnPass = ENDPOINTS.filter(e=>e.exchange==='binance').every(e=>results[e.id]?.ok);
+  const bbPass = ENDPOINTS.filter(e=>e.exchange==='bybit').every(e=>results[e.id]?.ok);
+  document.getElementById('ex-binance-lbl').className = 'ex-btn ' + (bnPass ? 'on-binance' : '');
+  document.getElementById('ex-bybit-lbl').className   = 'ex-btn ' + (bbPass ? 'on-bybit'   : '');
+
+  // Summary
+  document.getElementById('s-total').textContent = ENDPOINTS.length;
+  document.getElementById('s-pass').textContent  = pass;
+  document.getElementById('s-fail').textContent  = fail;
+  document.getElementById('s-warn').textContent  = warn;
+  document.getElementById('s-lat').textContent   = pass > 0 ? Math.round(totalMs/pass)+'ms' : '—';
+  document.getElementById('summary').style.display = 'flex';
+
+  btn.disabled = false;
+  btn.textContent = '▶ RUN AGAIN';
+  running = false;
+}
+
+function clearResults() {
+  results = {};
+  document.getElementById('results-wrap').innerHTML = '';
+  document.getElementById('summary').style.display  = 'none';
+  document.getElementById('prog').style.width = '0';
+  document.getElementById('ex-binance-lbl').className = 'ex-btn';
+  document.getElementById('ex-bybit-lbl').className   = 'ex-btn';
+  document.getElementById('run-btn').textContent = '▶ RUN ALL TESTS';
+}
+
+// Init skeleton on load
+renderSkeleton();
+</script>
+</body>
+</html>
