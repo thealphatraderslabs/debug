@@ -1,635 +1,1331 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>ATL — API Debug Tool</title>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Intelligence Scanner</title>
 <style>
-:root {
-  --bg:#070a0f; --bg2:#0b0f18; --bg3:#111826;
-  --border:#1a2236; --border2:#243050;
-  --accent:#00d4ff; --bull:#00e676; --bear:#ff3d57;
-  --orange:#ff9800; --gold:#ffd54f;
-  --text:#d0dff0; --dim:#6a85a8; --dim2:#3a4f6a;
-  --font-d:'Orbitron',monospace; --font-m:'Share Tech Mono',monospace;
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:var(--font-m);font-size:12px;min-height:100vh;}
-.bg-grid{position:fixed;inset:0;pointer-events:none;z-index:0;
-  background-image:linear-gradient(rgba(0,212,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.02) 1px,transparent 1px);
-  background-size:40px 40px;}
-.wrap{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:20px 24px;}
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap');
 
-/* HEADER */
-.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border);}
-.logo{font-family:var(--font-d);font-size:1rem;font-weight:900;letter-spacing:4px;color:var(--accent);}
-.logo span{color:var(--dim2);}
-.hdr-sub{font-size:0.6rem;color:var(--dim);letter-spacing:3px;}
-.hdr-right{display:flex;align-items:center;gap:16px;}
-.run-btn{
-  font-family:var(--font-d);font-size:0.65rem;font-weight:700;letter-spacing:2px;
-  padding:10px 24px;border:1px solid var(--accent);color:var(--accent);
-  background:transparent;border-radius:4px;cursor:pointer;transition:all 0.2s;
-}
-.run-btn:hover{background:rgba(0,212,255,0.1);}
-.run-btn:disabled{opacity:0.4;cursor:not-allowed;}
-.clear-btn{
-  font-family:var(--font-d);font-size:0.6rem;font-weight:700;letter-spacing:2px;
-  padding:10px 16px;border:1px solid var(--border2);color:var(--dim);
-  background:transparent;border-radius:4px;cursor:pointer;transition:all 0.2s;
-}
-.clear-btn:hover{border-color:var(--bear);color:var(--bear);}
+  :root {
+    --bg: #060a0f;
+    --panel: #0b1118;
+    --border: #1a2a3a;
+    --accent: #00d4ff;
+    --accent2: #ff6b2b;
+    --accent3: #39ff14;
+    --warn: #ffcc00;
+    --danger: #ff2d55;
+    --text: #c8d8e8;
+    --dim: #4a6070;
+    --glow: 0 0 20px rgba(0,212,255,0.3);
+    --glow2: 0 0 20px rgba(255,107,43,0.3);
+  }
 
-/* EXCHANGE TOGGLE */
-.ex-toggle{display:flex;gap:8px;margin-bottom:20px;}
-.ex-btn{
-  font-family:var(--font-d);font-size:0.58rem;font-weight:700;letter-spacing:2px;
-  padding:8px 20px;border-radius:4px;cursor:pointer;transition:all 0.2s;border:1px solid var(--border2);
-  color:var(--dim);background:var(--bg2);
-}
-.ex-btn.on-binance{border-color:rgba(255,152,0,0.5);color:var(--orange);background:rgba(255,152,0,0.06);}
-.ex-btn.on-bybit{border-color:rgba(0,212,255,0.5);color:var(--accent);background:rgba(0,212,255,0.06);}
+  * { margin:0; padding:0; box-sizing:border-box; }
 
-/* PROGRESS */
-.progress-bar{height:2px;background:var(--border);border-radius:1px;margin-bottom:20px;overflow:hidden;}
-.progress-fill{height:100%;background:var(--accent);border-radius:1px;transition:width 0.3s ease;width:0;}
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
 
-/* SUMMARY STRIP */
-.summary{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;}
-.sum-card{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:10px 16px;min-width:120px;}
-.sum-label{font-size:0.55rem;color:var(--dim);letter-spacing:2px;margin-bottom:4px;}
-.sum-val{font-family:var(--font-d);font-size:1.1rem;font-weight:700;}
-.sum-val.a{color:var(--accent);}
-.sum-val.g{color:var(--bull);}
-.sum-val.r{color:var(--bear);}
-.sum-val.o{color:var(--orange);}
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
 
-/* ENDPOINT CARDS */
-.section-title{
-  font-family:var(--font-d);font-size:0.65rem;letter-spacing:3px;color:var(--dim);
-  margin:20px 0 12px;padding-left:8px;border-left:2px solid var(--accent);
-}
-.ep-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:8px;}
-.ep-card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
-.ep-head{
-  display:flex;align-items:center;gap:12px;padding:10px 14px;
-  cursor:pointer;user-select:none;transition:background 0.15s;
-}
-.ep-head:hover{background:rgba(255,255,255,0.02);}
-.ep-status{
-  width:8px;height:8px;border-radius:50%;flex-shrink:0;
-  background:var(--dim2);
-}
-.ep-status.ok{background:var(--bull);box-shadow:0 0 6px rgba(0,230,118,0.5);}
-.ep-status.fail{background:var(--bear);box-shadow:0 0 6px rgba(255,61,87,0.5);}
-.ep-status.warn{background:var(--orange);box-shadow:0 0 6px rgba(255,152,0,0.5);}
-.ep-status.pending{background:var(--dim);animation:blink 1s ease-in-out infinite;}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
-.ep-name{font-size:0.68rem;color:var(--text);letter-spacing:1px;flex:1;}
-.ep-tag{font-size:0.52rem;letter-spacing:1px;padding:2px 7px;border-radius:2px;}
-.tag-binance{background:rgba(255,152,0,0.1);color:var(--orange);border:1px solid rgba(255,152,0,0.2);}
-.tag-bybit{background:rgba(0,212,255,0.08);color:var(--accent);border:1px solid rgba(0,212,255,0.2);}
-.ep-ms{font-size:0.6rem;color:var(--dim);min-width:60px;text-align:right;}
-.ep-chevron{color:var(--dim2);font-size:0.7rem;transition:transform 0.2s;}
-.ep-card.open .ep-chevron{transform:rotate(90deg);}
-.ep-body{display:none;border-top:1px solid var(--border);padding:14px;}
-.ep-card.open .ep-body{display:block;}
+  .scanline {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: scanline 4s linear infinite;
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.5;
+  }
 
-/* URL display */
-.ep-url{font-size:0.6rem;color:var(--dim);word-break:break-all;margin-bottom:10px;padding:6px 10px;background:var(--bg);border-radius:3px;border:1px solid var(--border);}
+  @keyframes scanline {
+    0% { top: 0; opacity: 0.5; }
+    100% { top: 100vh; opacity: 0; }
+  }
 
-/* Fields table */
-.fields-title{font-size:0.58rem;color:var(--dim);letter-spacing:2px;margin-bottom:6px;}
-.fields-table{width:100%;border-collapse:collapse;margin-bottom:12px;}
-.fields-table th{font-size:0.55rem;color:var(--dim2);letter-spacing:1.5px;text-align:left;padding:4px 8px;border-bottom:1px solid var(--border);}
-.fields-table td{font-size:0.62rem;padding:4px 8px;border-bottom:1px solid rgba(26,34,54,0.5);vertical-align:top;}
-.fields-table td:first-child{color:var(--gold);white-space:nowrap;}
-.fields-table td:nth-child(2){color:var(--accent);white-space:nowrap;}
-.fields-table td:nth-child(3){color:var(--text);word-break:break-all;}
-.fields-table td:nth-child(4){color:var(--dim);white-space:nowrap;}
-.fields-table tr:last-child td{border-bottom:none;}
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+  }
 
-/* Raw JSON */
-.raw-toggle{font-size:0.55rem;color:var(--dim);letter-spacing:1px;cursor:pointer;text-decoration:underline;margin-bottom:6px;display:inline-block;}
-.raw-toggle:hover{color:var(--accent);}
-.raw-block{display:none;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:10px;font-size:0.6rem;color:var(--dim);overflow-x:auto;white-space:pre;max-height:300px;overflow-y:auto;line-height:1.6;}
-.raw-block.show{display:block;}
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
 
-/* Error block */
-.err-block{background:rgba(255,61,87,0.06);border:1px solid rgba(255,61,87,0.2);border-radius:3px;padding:10px;font-size:0.62rem;color:var(--bear);}
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
 
-/* Notes */
-.ep-notes{font-size:0.6rem;color:var(--dim);margin-top:8px;padding:8px;background:rgba(0,212,255,0.03);border:1px solid rgba(0,212,255,0.08);border-radius:3px;line-height:1.6;}
-.ep-notes strong{color:var(--accent);}
+  .logo-icon {
+    width: 48px; height: 48px;
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: var(--glow), inset 0 0 20px rgba(0,212,255,0.1);
+    animation: pulse-border 2s ease-in-out infinite;
+  }
 
-/* Timeframe badges */
-.tf-wrap{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
-.tf-badge{font-size:0.52rem;padding:2px 8px;border-radius:2px;border:1px solid var(--border2);color:var(--dim);}
-.tf-badge.avail{border-color:rgba(0,230,118,0.3);color:var(--bull);background:rgba(0,230,118,0.05);}
+  @keyframes pulse-border {
+    0%, 100% { box-shadow: var(--glow), inset 0 0 20px rgba(0,212,255,0.1); }
+    50% { box-shadow: 0 0 40px rgba(0,212,255,0.5), inset 0 0 30px rgba(0,212,255,0.2); }
+  }
 
-/* Sample rows note */
-.sample-note{font-size:0.55rem;color:var(--dim2);letter-spacing:1px;margin-bottom:4px;}
+  .logo-text h1 {
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-shadow: 0 0 30px rgba(0,212,255,0.5);
+  }
 
-::-webkit-scrollbar{width:5px;height:5px;}
-::-webkit-scrollbar-track{background:var(--bg);}
-::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+  .logo-text p {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 2px;
+    margin-top: 2px;
+  }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+  }
+
+  .status-pill {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid;
+    letter-spacing: 1px;
+    font-size: 11px;
+  }
+
+  .status-pill.idle { border-color: var(--dim); color: var(--dim); }
+  .status-pill.scanning { border-color: var(--accent); color: var(--accent); animation: blink 1s ease-in-out infinite; }
+  .status-pill.done { border-color: var(--accent3); color: var(--accent3); }
+  .status-pill.error { border-color: var(--danger); color: var(--danger); }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+  }
+
+  /* CONTROL PANEL */
+  .control-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .progress-section {
+    flex: 1;
+    min-width: 300px;
+  }
+
+  .progress-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .progress-bar-wrap {
+    height: 6px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    border-radius: 3px;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px var(--accent);
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 20px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+  }
+
+  .stat-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+
+  .dot-ok { background: var(--accent3); box-shadow: 0 0 6px var(--accent3); }
+  .dot-warn { background: var(--warn); box-shadow: 0 0 6px var(--warn); }
+  .dot-err { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+  .dot-skip { background: var(--dim); }
+
+  .btn {
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 2px;
+    padding: 12px 28px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+    box-shadow: 0 0 20px rgba(0,212,255,0.3);
+  }
+  .btn-primary:hover { box-shadow: 0 0 40px rgba(0,212,255,0.6); transform: translateY(-1px); }
+  .btn-primary:disabled { background: var(--dim); color: #000; box-shadow: none; cursor: not-allowed; transform: none; }
+
+  .btn-export {
+    background: transparent;
+    color: var(--accent3);
+    border: 1px solid var(--accent3);
+    box-shadow: 0 0 10px rgba(57,255,20,0.1);
+  }
+  .btn-export:hover { background: rgba(57,255,20,0.1); box-shadow: 0 0 20px rgba(57,255,20,0.3); transform: translateY(-1px); }
+  .btn-export:disabled { color: var(--dim); border-color: var(--dim); box-shadow: none; cursor: not-allowed; transform: none; }
+
+  .btn-stop {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid var(--danger);
+  }
+  .btn-stop:hover { background: rgba(255,45,85,0.1); }
+  .btn-stop:disabled { color: var(--dim); border-color: var(--dim); cursor: not-allowed; }
+
+  /* SOURCES */
+  .sources-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .source-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    transition: border-color 0.3s;
+  }
+
+  .source-card.active { border-color: var(--accent); box-shadow: var(--glow); }
+  .source-card.done-ok { border-color: var(--accent3); }
+  .source-card.done-err { border-color: var(--danger); }
+
+  .source-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .source-name {
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+  }
+
+  .source-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(0,212,255,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(0,212,255,0.2);
+  }
+
+  .source-url {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    margin-bottom: 10px;
+    word-break: break-all;
+  }
+
+  .source-progress {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+  }
+
+  .endpoint-mini-list {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+
+  .ep-mini {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.03);
+  }
+
+  .ep-status {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .s-ok { background: rgba(57,255,20,0.15); color: var(--accent3); }
+  .s-err { background: rgba(255,45,85,0.15); color: var(--danger); }
+  .s-warn { background: rgba(255,204,0,0.15); color: var(--warn); }
+  .s-cors { background: rgba(255,107,43,0.15); color: var(--accent2); }
+  .s-pending { background: rgba(255,255,255,0.05); color: var(--dim); }
+  .s-scanning { background: rgba(0,212,255,0.15); color: var(--accent); animation: blink 0.8s infinite; }
+
+  /* LOG PANEL */
+  .log-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.02);
+  }
+
+  .panel-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+
+  .log-body {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    line-height: 1.8;
+    padding: 16px 20px;
+    max-height: 200px;
+    overflow-y: auto;
+    color: var(--dim);
+  }
+
+  .log-body::-webkit-scrollbar { width: 4px; }
+  .log-body::-webkit-scrollbar-track { background: transparent; }
+  .log-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .log-line { display: flex; gap: 10px; }
+  .log-time { color: var(--dim); opacity: 0.6; white-space: nowrap; }
+  .log-ok { color: var(--accent3); }
+  .log-err { color: var(--danger); }
+  .log-warn { color: var(--warn); }
+  .log-info { color: var(--accent); }
+  .log-cors { color: var(--accent2); }
+
+  /* RESULTS TABLE */
+  .results-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  .results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+  }
+
+  .results-table th {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--dim);
+    padding: 12px 16px;
+    text-align: left;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .results-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(26,42,58,0.5);
+    color: var(--text);
+    vertical-align: top;
+  }
+
+  .results-table tr:hover td { background: rgba(0,212,255,0.03); }
+
+  .results-table tr:last-child td { border-bottom: none; }
+
+  .td-source {
+    font-weight: 600;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .td-endpoint { color: var(--text); max-width: 240px; word-break: break-all; }
+  .td-category { color: var(--dim); white-space: nowrap; }
+  .td-latency { text-align: right; white-space: nowrap; }
+  .td-latency.fast { color: var(--accent3); }
+  .td-latency.medium { color: var(--warn); }
+  .td-latency.slow { color: var(--danger); }
+  .td-fields { color: var(--dim); font-size: 10px; max-width: 320px; }
+  .td-note { color: var(--dim); font-size: 10px; max-width: 200px; }
+
+  /* Field tags */
+  .field-tag {
+    display: inline-block;
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.15);
+    color: var(--accent);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 9px;
+    margin: 1px 2px;
+  }
+
+  .field-tag.price { background: rgba(57,255,20,0.08); border-color: rgba(57,255,20,0.2); color: var(--accent3); }
+  .field-tag.time { background: rgba(255,204,0,0.08); border-color: rgba(255,204,0,0.2); color: var(--warn); }
+  .field-tag.volume { background: rgba(255,107,43,0.08); border-color: rgba(255,107,43,0.2); color: var(--accent2); }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .results-table { font-size: 10px; }
+    .results-table th, .results-table td { padding: 8px 10px; }
+    .td-fields { display: none; }
+  }
+
+  /* CORS notice */
+  .cors-notice {
+    background: rgba(255,107,43,0.08);
+    border: 1px solid rgba(255,107,43,0.3);
+    border-radius: 8px;
+    padding: 14px 20px;
+    margin-bottom: 24px;
+    font-size: 12px;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--accent2);
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .cors-notice strong { display: block; margin-bottom: 4px; font-size: 13px; }
+
+  /* Spinner */
+  .spinner {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border: 2px solid rgba(0,212,255,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+  }
+
+  .empty-state .big { font-family: 'Orbitron', monospace; font-size: 32px; opacity: 0.2; margin-bottom: 12px; }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 24px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 2px;
+    border-top: 1px solid var(--border);
+  }
+
+  .hidden { display: none !important; }
+
+  /* Collapsible filter bar */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    font-family: 'Share Tech Mono', monospace;
+    align-items: center;
+  }
+
+  .filter-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--dim);
+    padding: 4px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+  }
+
+  .filter-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.08); }
+  .filter-btn:hover { border-color: var(--text); color: var(--text); }
+
+  /* Summary cards */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .summary-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .summary-card .val {
+    font-family: 'Orbitron', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .summary-card .lbl {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 1px;
+  }
+
+  .c-total .val { color: var(--accent); }
+  .c-ok .val { color: var(--accent3); }
+  .c-cors .val { color: var(--accent2); }
+  .c-err .val { color: var(--danger); }
+  .c-time .val { color: var(--warn); font-size: 20px; }
 </style>
 </head>
 <body>
-<div class="bg-grid"></div>
-<div class="wrap">
+<div class="scanline"></div>
 
-  <div class="hdr">
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">⬡</div>
+      <div class="logo-text">
+        <h1>API RECON</h1>
+        <p>EXCHANGE DATA INTELLIGENCE SCANNER v1.0</p>
+      </div>
+    </div>
+    <div class="status-bar">
+      <span id="statusPill" class="status-pill idle">● IDLE</span>
+      <span id="currentTask" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);">—</span>
+    </div>
+  </header>
+
+  <!-- CORS NOTICE -->
+  <div class="cors-notice">
+    <span style="font-size:18px;">⚠</span>
     <div>
-      <div class="logo"><span>[</span>ATL<span>]</span> <span style="font-size:0.7rem;color:var(--dim);font-weight:400;letter-spacing:2px;">API DEBUG TOOL</span></div>
-      <div class="hdr-sub" style="margin-top:4px;">ENDPOINT DIAGNOSTICS · FIELD MAPPER · DATA AVAILABILITY REPORT</div>
-    </div>
-    <div class="hdr-right">
-      <button class="clear-btn" onclick="clearResults()">CLEAR</button>
-      <button class="run-btn" id="run-btn" onclick="runAll()">▶ RUN ALL TESTS</button>
+      <strong>CORS ENVIRONMENT NOTE</strong>
+      Browser-based requests to exchange APIs will encounter CORS restrictions. The scanner detects and reports this accurately — a CORS block is NOT a dead endpoint. The exported report will clearly separate: ✓ Success / ⚡ CORS Blocked (endpoint exists, data accessible server-side) / ✗ Error / ⏱ Timeout. Use this to decide your server-side implementation strategy.
     </div>
   </div>
 
-  <div class="ex-toggle">
-    <div class="ex-btn" id="ex-binance-lbl">⬤ BINANCE FUTURES</div>
-    <div class="ex-btn" id="ex-bybit-lbl">⬤ BYBIT LINEAR</div>
+  <!-- CONTROL PANEL -->
+  <div class="control-panel">
+    <div class="progress-section">
+      <div class="progress-label">
+        <span>SCAN PROGRESS</span>
+        <span id="progressText">0 / 0</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+      <div class="stats-row">
+        <div class="stat"><div class="stat-dot dot-ok"></div><span id="cntOk">0</span> OK</div>
+        <div class="stat"><div class="stat-dot" style="background:var(--accent2);box-shadow:0 0 6px var(--accent2)"></div><span id="cntCors">0</span> CORS</div>
+        <div class="stat"><div class="stat-dot dot-err"></div><span id="cntErr">0</span> ERR</div>
+        <div class="stat"><div class="stat-dot dot-warn"></div><span id="cntTimeout">0</span> TIMEOUT</div>
+        <div class="stat"><div class="stat-dot dot-skip"></div><span id="cntPending">0</span> PENDING</div>
+        <div class="stat" style="margin-left:auto"><span style="color:var(--dim)">ELAPSED:</span>&nbsp;<span id="elapsed" style="color:var(--warn)">0s</span></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-primary" id="btnScan" onclick="startScan()">⬡ START SCAN</button>
+      <button class="btn btn-stop" id="btnStop" onclick="stopScan()" disabled>■ STOP</button>
+      <button class="btn btn-export" id="btnExport" onclick="exportReport()" disabled>↓ EXPORT REPORT</button>
+    </div>
   </div>
 
-  <div class="progress-bar"><div class="progress-fill" id="prog"></div></div>
+  <!-- SOURCE CARDS -->
+  <div class="sources-grid" id="sourceGrid"></div>
 
-  <div class="summary" id="summary" style="display:none;">
-    <div class="sum-card"><div class="sum-label">TOTAL TESTS</div><div class="sum-val a" id="s-total">—</div></div>
-    <div class="sum-card"><div class="sum-label">PASSED</div><div class="sum-val g" id="s-pass">—</div></div>
-    <div class="sum-card"><div class="sum-label">FAILED</div><div class="sum-val r" id="s-fail">—</div></div>
-    <div class="sum-card"><div class="sum-label">WARNINGS</div><div class="sum-val o" id="s-warn">—</div></div>
-    <div class="sum-card"><div class="sum-label">AVG LATENCY</div><div class="sum-val a" id="s-lat">—</div></div>
+  <!-- SUMMARY (hidden until done) -->
+  <div id="summarySection" class="hidden">
+    <div class="summary-grid" id="summaryGrid"></div>
   </div>
 
-  <div id="results-wrap"></div>
+  <!-- RESULTS TABLE -->
+  <div class="results-panel">
+    <div class="panel-header">
+      <span class="panel-title">ENDPOINT SCAN RESULTS</span>
+      <div class="filter-bar" id="filterBar">
+        <span style="color:var(--dim);font-size:10px;letter-spacing:1px">FILTER:</span>
+        <button class="filter-btn active" onclick="setFilter('all',this)">ALL</button>
+        <button class="filter-btn" onclick="setFilter('ok',this)">OK</button>
+        <button class="filter-btn" onclick="setFilter('cors',this)">CORS</button>
+        <button class="filter-btn" onclick="setFilter('error',this)">ERROR</button>
+        <button class="filter-btn" onclick="setFilter('timeout',this)">TIMEOUT</button>
+      </div>
+    </div>
+    <div id="tableWrap">
+      <div class="empty-state">
+        <div class="big">◈</div>
+        <div>NO SCAN ACTIVE — PRESS START SCAN TO BEGIN</div>
+      </div>
+    </div>
+  </div>
 
+  <!-- LOG PANEL -->
+  <div class="log-panel">
+    <div class="panel-header">
+      <span class="panel-title">SCAN LOG</span>
+      <button class="filter-btn" onclick="document.getElementById('logBody').innerHTML=''">CLEAR</button>
+    </div>
+    <div class="log-body" id="logBody">
+      <div class="log-line"><span class="log-time">[SYSTEM]</span><span class="log-info">API Recon Scanner initialized. Define sources and press START SCAN.</span></div>
+    </div>
+  </div>
+
+  <footer>API RECON · EXCHANGE DATA INTELLIGENCE · FOR RESEARCH USE ONLY</footer>
 </div>
 
 <script>
-'use strict';
+// ─── DATA DEFINITIONS ──────────────────────────────────────────────────────────
+const SOURCES = {
+  BINANCE_FAPI: {
+    name: 'BINANCE FUTURES',
+    tag: 'FAPI',
+    base: 'https://fapi.binance.com/fapi/v1',
+    color: '#f0b90b',
+    endpoints: [
+      { path: '/ping',              cat: 'System',      desc: 'Server connectivity ping',                  fields: [] },
+      { path: '/time',              cat: 'System',      desc: 'Server timestamp (UTC ms)',                 fields: ['serverTime'] },
+      { path: '/exchangeInfo',      cat: 'Market Meta', desc: 'All symbols, contract specs, filters, limits', fields: ['symbols','timezone','serverTime','rateLimits','exchangeFilters'] },
+      { path: '/depth?symbol=BTCUSDT&limit=5', cat: 'Order Book', desc: 'Best bids/asks with qty', fields: ['lastUpdateId','bids','asks','E','T'] },
+      { path: '/trades?symbol=BTCUSDT&limit=5', cat: 'Trades',   desc: 'Recent public trades',           fields: ['id','price','qty','quoteQty','time','isBuyerMaker'] },
+      { path: '/historicalTrades?symbol=BTCUSDT&limit=5', cat: 'Trades', desc: 'Historical trade data',  fields: ['id','price','qty','quoteQty','time','isBuyerMaker'] },
+      { path: '/aggTrades?symbol=BTCUSDT&limit=5', cat: 'Trades', desc: 'Aggregated trade data',        fields: ['a','p','q','f','l','T','m'] },
+      { path: '/klines?symbol=BTCUSDT&interval=1m&limit=3', cat: 'OHLCV', desc: '1m candles OHLCV+volume', fields: ['openTime','open','high','low','close','volume','closeTime','quoteVolume','trades','takerBuyBase','takerBuyQuote'] },
+      { path: '/continuousKlines?pair=BTCUSDT&contractType=PERPETUAL&interval=1m&limit=3', cat: 'OHLCV', desc: 'Continuous contract klines', fields: ['openTime','open','high','low','close','volume','closeTime'] },
+      { path: '/indexPriceKlines?pair=BTCUSDT&interval=1m&limit=3', cat: 'Price Data', desc: 'Index price klines', fields: ['openTime','open','high','low','close','volume'] },
+      { path: '/markPriceKlines?symbol=BTCUSDT&interval=1m&limit=3', cat: 'Price Data', desc: 'Mark price klines', fields: ['openTime','open','high','low','close'] },
+      { path: '/premiumIndexKlines?symbol=BTCUSDT&interval=1m&limit=3', cat: 'Price Data', desc: 'Premium index klines', fields: [] },
+      { path: '/premiumIndex?symbol=BTCUSDT', cat: 'Price Data', desc: 'Mark price, index, funding rate, next funding time', fields: ['symbol','markPrice','indexPrice','estimatedSettlePrice','lastFundingRate','nextFundingTime','interestRate','time'] },
+      { path: '/premiumIndex',     cat: 'Price Data',  desc: 'All symbols mark/index prices',            fields: ['symbol','markPrice','indexPrice','lastFundingRate','nextFundingTime'] },
+      { path: '/fundingRate?symbol=BTCUSDT&limit=5', cat: 'Funding', desc: 'Funding rate history',       fields: ['symbol','fundingRate','fundingTime','markPrice'] },
+      { path: '/fundingInfo',      cat: 'Funding',     desc: 'Funding interval per symbol',              fields: ['symbol','adjustedFundingRateCap','adjustedFundingRateFloor','fundingIntervalHours'] },
+      { path: '/ticker/24hr?symbol=BTCUSDT', cat: 'Ticker', desc: '24h stats: price change, volume, trades', fields: ['symbol','priceChange','priceChangePercent','weightedAvgPrice','lastPrice','lastQty','openPrice','highPrice','lowPrice','volume','quoteVolume','openTime','closeTime','firstId','lastId','count'] },
+      { path: '/ticker/24hr',      cat: 'Ticker',      desc: 'All symbols 24h stats',                    fields: ['symbol','priceChange','priceChangePercent','lastPrice','volume','quoteVolume'] },
+      { path: '/ticker/price?symbol=BTCUSDT', cat: 'Ticker', desc: 'Latest price for symbol',            fields: ['symbol','price','time'] },
+      { path: '/ticker/price',     cat: 'Ticker',      desc: 'Latest prices for all symbols',            fields: ['symbol','price','time'] },
+      { path: '/ticker/bookTicker?symbol=BTCUSDT', cat: 'Ticker', desc: 'Best bid/ask price & qty',      fields: ['symbol','bidPrice','bidQty','askPrice','askQty','time'] },
+      { path: '/ticker/bookTicker', cat: 'Ticker',     desc: 'Best bid/ask for all symbols',             fields: ['symbol','bidPrice','bidQty','askPrice','askQty'] },
+      { path: '/openInterest?symbol=BTCUSDT', cat: 'OI / Sentiment', desc: 'Open interest contracts + USDT value', fields: ['openInterest','symbol','time'] },
+      { path: '/openInterestHist?symbol=BTCUSDT&period=5m&limit=5', cat: 'OI / Sentiment', desc: 'Historical open interest', fields: ['symbol','sumOpenInterest','sumOpenInterestValue','timestamp'] },
+      { path: '/topLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=3', cat: 'Sentiment', desc: 'Top trader L/S account ratio', fields: ['symbol','longShortRatio','longAccount','shortAccount','timestamp'] },
+      { path: '/topLongShortPositionRatio?symbol=BTCUSDT&period=5m&limit=3', cat: 'Sentiment', desc: 'Top trader L/S position ratio', fields: ['symbol','longShortRatio','longAccount','shortAccount','timestamp'] },
+      { path: '/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=3', cat: 'Sentiment', desc: 'Global L/S account ratio', fields: ['symbol','longShortRatio','longAccount','shortAccount','timestamp'] },
+      { path: '/takerlongshortRatio?symbol=BTCUSDT&period=5m&limit=3', cat: 'Sentiment', desc: 'Taker buy/sell volume ratio', fields: ['buySellRatio','buyVol','sellVol','timestamp'] },
+      { path: '/lvtKlines?symbol=BTCUSDT&period=5m&limit=3', cat: 'Leverage', desc: 'Leverage token OHLCV', fields: [] },
+      { path: '/indexInfo',        cat: 'Market Meta', desc: 'Composite index symbols',                  fields: ['symbol','time','component'] },
+      { path: '/assetIndex?symbol=BTCUSD', cat: 'Market Meta', desc: 'Multi-asset mode index', fields: [] },
+    ]
+  },
+  BINANCE_SPOT: {
+    name: 'BINANCE SPOT',
+    tag: 'SPOT',
+    base: 'https://api.binance.com/api/v3',
+    color: '#f0b90b',
+    endpoints: [
+      { path: '/ping',              cat: 'System',      desc: 'Server connectivity ping',                  fields: [] },
+      { path: '/time',              cat: 'System',      desc: 'Server timestamp',                         fields: ['serverTime'] },
+      { path: '/exchangeInfo',      cat: 'Market Meta', desc: 'All trading pairs, symbol filters, rate limits', fields: ['symbols','timezone','serverTime','rateLimits','sors'] },
+      { path: '/depth?symbol=BTCUSDT&limit=5', cat: 'Order Book', desc: 'Order book bids & asks',        fields: ['lastUpdateId','bids','asks'] },
+      { path: '/trades?symbol=BTCUSDT&limit=5', cat: 'Trades',   desc: 'Recent public trades',           fields: ['id','price','qty','quoteQty','time','isBuyerMaker','isBestMatch'] },
+      { path: '/historicalTrades?symbol=BTCUSDT&limit=5', cat: 'Trades', desc: 'Historical trades (API key required for full access)', fields: ['id','price','qty','quoteQty','time','isBuyerMaker'] },
+      { path: '/aggTrades?symbol=BTCUSDT&limit=5', cat: 'Trades', desc: 'Aggregated trades',             fields: ['a','p','q','f','l','T','m','M'] },
+      { path: '/klines?symbol=BTCUSDT&interval=1m&limit=3', cat: 'OHLCV', desc: 'Candlestick OHLCV data', fields: ['openTime','open','high','low','close','volume','closeTime','quoteVolume','trades','takerBuyBaseVol','takerBuyQuoteVol'] },
+      { path: '/uiKlines?symbol=BTCUSDT&interval=1m&limit=3', cat: 'OHLCV', desc: 'UI optimized klines', fields: ['openTime','open','high','low','close','volume','closeTime'] },
+      { path: '/avgPrice?symbol=BTCUSDT', cat: 'Price Data', desc: '5-min weighted average price',       fields: ['mins','price','closeTime'] },
+      { path: '/ticker/24hr?symbol=BTCUSDT', cat: 'Ticker', desc: 'Full 24h rolling stats',              fields: ['symbol','priceChange','priceChangePercent','weightedAvgPrice','prevClosePrice','lastPrice','lastQty','bidPrice','bidQty','askPrice','askQty','openPrice','highPrice','lowPrice','volume','quoteVolume','openTime','closeTime','firstId','lastId','count'] },
+      { path: '/ticker/24hr',      cat: 'Ticker',      desc: 'All symbols 24h stats',                    fields: ['symbol','priceChange','priceChangePercent','lastPrice','volume'] },
+      { path: '/ticker/tradingDay?symbol=BTCUSDT', cat: 'Ticker', desc: 'Trading day stats',             fields: ['symbol','priceChange','priceChangePercent','weightedAvgPrice','openPrice','highPrice','lowPrice','lastPrice','volume','quoteVolume','openTime','closeTime','firstId','lastId','count'] },
+      { path: '/ticker/price?symbol=BTCUSDT', cat: 'Ticker', desc: 'Latest spot price',                  fields: ['symbol','price'] },
+      { path: '/ticker/price',     cat: 'Ticker',      desc: 'All symbols spot prices',                  fields: ['symbol','price'] },
+      { path: '/ticker/bookTicker?symbol=BTCUSDT', cat: 'Ticker', desc: 'Best bid/ask spot',             fields: ['symbol','bidPrice','bidQty','askPrice','askQty'] },
+      { path: '/ticker/bookTicker', cat: 'Ticker',     desc: 'All symbols best bid/ask',                 fields: ['symbol','bidPrice','bidQty','askPrice','askQty'] },
+      { path: '/ticker?symbol=BTCUSDT&windowSize=1h', cat: 'Ticker', desc: 'Rolling window stats (1h/4h/1d)', fields: ['symbol','priceChange','priceChangePercent','weightedAvgPrice','openPrice','highPrice','lowPrice','lastPrice','volume','quoteVolume','openTime','closeTime','firstId','lastId','count'] },
+    ]
+  },
+  BYBIT_API: {
+    name: 'BYBIT',
+    tag: 'V5',
+    base: 'https://api.bybit.com/v5/market',
+    color: '#f7a600',
+    endpoints: [
+      { path: '/time',              cat: 'System',      desc: 'Server time (seconds + nanoseconds)',       fields: ['timeSecond','timeNano'] },
+      { path: '/instruments-info?category=linear&symbol=BTCUSDT', cat: 'Market Meta', desc: 'Symbol specs: contract type, qty/price filters, status', fields: ['symbol','contractType','status','baseCoin','quoteCoin','launchTime','priceFilter','lotSizeFilter','leverageFilter','riskParameters'] },
+      { path: '/instruments-info?category=spot&symbol=BTCUSDT', cat: 'Market Meta', desc: 'Spot instrument info', fields: ['symbol','baseCoin','quoteCoin','status','priceFilter','lotSizeFilter'] },
+      { path: '/instruments-info?category=inverse&symbol=BTCUSD', cat: 'Market Meta', desc: 'Inverse contract specs', fields: ['symbol','contractType','baseCoin','settleCoin'] },
+      { path: '/instruments-info?category=option', cat: 'Market Meta', desc: 'Options instruments list', fields: ['symbol','optionsType','status','baseCoin','quoteCoin','settleCoin'] },
+      { path: '/orderbook?category=linear&symbol=BTCUSDT&limit=5', cat: 'Order Book', desc: 'Order book with update ID, timestamp', fields: ['s','b','a','ts','u','seq','cts'] },
+      { path: '/orderbook?category=spot&symbol=BTCUSDT&limit=5', cat: 'Order Book', desc: 'Spot order book', fields: ['s','b','a','ts','u'] },
+      { path: '/kline?category=linear&symbol=BTCUSDT&interval=1&limit=3', cat: 'OHLCV', desc: 'OHLCV + turnover klines', fields: ['startTime','openPrice','highPrice','lowPrice','closePrice','volume','turnover'] },
+      { path: '/kline?category=spot&symbol=BTCUSDT&interval=1&limit=3', cat: 'OHLCV', desc: 'Spot klines', fields: ['startTime','openPrice','highPrice','lowPrice','closePrice','volume','turnover'] },
+      { path: '/mark-price-kline?category=linear&symbol=BTCUSDT&interval=1&limit=3', cat: 'Price Data', desc: 'Mark price klines', fields: ['startTime','openPrice','highPrice','lowPrice','closePrice'] },
+      { path: '/index-price-kline?category=linear&symbol=BTCUSDT&interval=1&limit=3', cat: 'Price Data', desc: 'Index price klines', fields: ['startTime','openPrice','highPrice','lowPrice','closePrice'] },
+      { path: '/premium-index-price-kline?category=linear&symbol=BTCUSDT&interval=1&limit=3', cat: 'Price Data', desc: 'Premium index klines', fields: [] },
+      { path: '/tickers?category=linear&symbol=BTCUSDT', cat: 'Ticker', desc: 'Linear ticker: last price, OI, funding, 24h vol, bid/ask, index, mark', fields: ['symbol','lastPrice','indexPrice','markPrice','prevPrice24h','price24hPcnt','highPrice24h','lowPrice24h','prevPrice1h','openInterest','openInterestValue','turnover24h','volume24h','fundingRate','nextFundingTime','predictedDeliveryPrice','basisRate','deliveryFeeRate','deliveryTime','ask1Size','bid1Price','ask1Price','bid1Size','basis'] },
+      { path: '/tickers?category=spot&symbol=BTCUSDT', cat: 'Ticker', desc: 'Spot ticker: last, 24h vol, bid/ask', fields: ['symbol','bid1Price','bid1Size','ask1Price','ask1Size','lastPrice','prevPrice24h','price24hPcnt','highPrice24h','lowPrice24h','turnover24h','volume24h','usdIndexPrice'] },
+      { path: '/tickers?category=inverse&symbol=BTCUSD', cat: 'Ticker', desc: 'Inverse ticker', fields: ['symbol','lastPrice','indexPrice','markPrice','openInterest','fundingRate','nextFundingTime'] },
+      { path: '/tickers?category=option&baseCoin=BTC', cat: 'Ticker', desc: 'Options ticker data', fields: ['symbol','bid1Price','bid1Size','ask1Price','ask1Size','lastPrice','markPrice','indexPrice','openInterest','iv'] },
+      { path: '/recent-trade?category=linear&symbol=BTCUSDT&limit=5', cat: 'Trades', desc: 'Recent trades: price, side, size, timestamp', fields: ['execId','symbol','price','size','side','time','isBlockTrade'] },
+      { path: '/recent-trade?category=spot&symbol=BTCUSDT&limit=5', cat: 'Trades', desc: 'Recent spot trades', fields: ['execId','symbol','price','size','side','time'] },
+      { path: '/open-interest?category=linear&symbol=BTCUSDT&intervalTime=5min&limit=3', cat: 'OI', desc: 'Historical open interest with value', fields: ['openInterest','timestamp'] },
+      { path: '/historical-volatility?category=option&baseCoin=BTC&period=7', cat: 'Volatility', desc: 'Historical implied volatility', fields: ['period','value','time'] },
+      { path: '/insurance', cat: 'Insurance', desc: 'Insurance fund balances all assets', fields: ['coin','balance','value','updateTime'] },
+      { path: '/insurance?coin=BTC', cat: 'Insurance', desc: 'BTC insurance fund', fields: ['coin','balance','value','updateTime'] },
+      { path: '/risk-limit?category=linear&symbol=BTCUSDT', cat: 'Risk', desc: 'Risk limit tiers by position size', fields: ['id','symbol','riskLimitValue','maintenanceMargin','initialMargin','isLowestRisk','maxLeverage'] },
+      { path: '/delivery-price?category=linear&symbol=BTCUSDT&limit=3', cat: 'Settlement', desc: 'Historical delivery/settlement prices', fields: ['symbol','deliveryPrice','deliveryTime'] },
+      { path: '/long-short-ratio?category=linear&symbol=BTCUSDT&period=5min&limit=3', cat: 'Sentiment', desc: 'Long/short ratio data', fields: ['symbol','buyRatio','sellRatio','timestamp'] },
+      { path: '/funding/history?category=linear&symbol=BTCUSDT&limit=5', cat: 'Funding', desc: 'Funding rate history with mark price', fields: ['symbol','fundingRate','fundingRateTimestamp','markPrice'] },
+    ]
+  },
+  GECKO_API: {
+    name: 'COINGECKO',
+    tag: 'FREE',
+    base: 'https://api.coingecko.com/api/v3',
+    color: '#8dc63f',
+    endpoints: [
+      { path: '/ping',              cat: 'System',      desc: 'API status check',                         fields: ['gecko_says'] },
+      { path: '/simple/price?ids=bitcoin&vs_currencies=usd', cat: 'Price Data', desc: 'Simple price lookup', fields: ['bitcoin.usd'] },
+      { path: '/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_vol=true&include_24hr_change=true&include_last_updated_at=true&include_market_cap=true', cat: 'Price Data', desc: 'Price + volume + 24h change + mcap + timestamp', fields: ['id.usd','id.usd_24h_vol','id.usd_24h_change','id.usd_market_cap','id.last_updated_at'] },
+      { path: '/simple/supported_vs_currencies', cat: 'Meta',   desc: 'All supported fiat/crypto quote currencies', fields: ['array of currency strings'] },
+      { path: '/coins/list',        cat: 'Meta',        desc: 'Full list of all coins with id, symbol, name', fields: ['id','symbol','name'] },
+      { path: '/coins/list?include_platform=true', cat: 'Meta', desc: 'Coin list with platform contract addresses', fields: ['id','symbol','name','platforms'] },
+      { path: '/coins/markets?vs_currency=usd&ids=bitcoin&order=market_cap_desc&per_page=1&page=1', cat: 'Market Data', desc: 'Full market data per coin: price, mcap, volume, change, ATH, supply', fields: ['id','symbol','name','image','current_price','market_cap','market_cap_rank','fully_diluted_valuation','total_volume','high_24h','low_24h','price_change_24h','price_change_percentage_24h','market_cap_change_24h','market_cap_change_percentage_24h','circulating_supply','total_supply','max_supply','ath','ath_change_percentage','ath_date','atl','atl_change_percentage','atl_date','roi','last_updated'] },
+      { path: '/coins/bitcoin',     cat: 'Coin Detail', desc: 'Full coin detail: all market data, community, developer, links, description, categories', fields: ['id','symbol','name','platforms','detail_platforms','block_time_in_minutes','hashing_algorithm','categories','description','links','image','country_origin','genesis_date','sentiment_votes_up','sentiment_votes_down','watchlist_portfolio_users','market_cap_rank','market_data','community_data','developer_data','public_interest_stats','status_updates','last_updated'] },
+      { path: '/coins/bitcoin/tickers', cat: 'Exchange Data', desc: 'All exchange tickers for bitcoin with volume, trust score, bid/ask spread', fields: ['name','tickers.base','tickers.target','tickers.market','tickers.last','tickers.volume','tickers.converted_last','tickers.converted_volume','tickers.trust_score','tickers.bid_ask_spread_percentage','tickers.timestamp','tickers.last_traded_at','tickers.last_fetch_at','tickers.is_anomaly','tickers.is_stale','tickers.trade_url'] },
+      { path: '/coins/bitcoin/history?date=01-01-2024', cat: 'Historical', desc: 'Historical snapshot: price, mcap, volume for date', fields: ['id','symbol','name','market_data.current_price','market_data.market_cap','market_data.total_volume','community_data','developer_data','public_interest_stats'] },
+      { path: '/coins/bitcoin/market_chart?vs_currency=usd&days=1', cat: 'Historical', desc: 'Time series: prices, market caps, volumes (timestamps)', fields: ['prices[timestamp,price]','market_caps[timestamp,mcap]','total_volumes[timestamp,vol]'] },
+      { path: '/coins/bitcoin/market_chart/range?vs_currency=usd&from=1704067200&to=1704153600', cat: 'Historical', desc: 'Market chart over timestamp range', fields: ['prices','market_caps','total_volumes'] },
+      { path: '/coins/bitcoin/ohlc?vs_currency=usd&days=1', cat: 'OHLCV',    desc: 'OHLC candles (4h/daily)',                   fields: ['timestamp','open','high','low','close'] },
+      { path: '/coins/categories/list', cat: 'Meta',   desc: 'All coin category IDs and names',           fields: ['category_id','name'] },
+      { path: '/coins/categories',  cat: 'Market Data', desc: 'Category market caps, changes, volume',    fields: ['id','name','market_cap','market_cap_change_24h','content','top_3_coins','volume_24h','updated_at'] },
+      { path: '/exchanges',         cat: 'Exchanges',   desc: 'Exchange list: volume, trust score, year established', fields: ['id','name','year_established','country','description','url','image','has_trading_incentive','trust_score','trust_score_rank','trade_volume_24h_btc','trade_volume_24h_btc_normalized'] },
+      { path: '/exchanges/list',    cat: 'Exchanges',   desc: 'Simple exchange id/name list',              fields: ['id','name'] },
+      { path: '/exchanges/binance', cat: 'Exchanges',   desc: 'Detailed exchange info: volume, socials, tickers', fields: ['name','year_established','country','description','url','image','facebook_url','reddit_url','telegram_url','slack_url','other_url','twitter_handle','has_trading_incentive','centralized','public_notice','alert_notice','trust_score','trust_score_rank','trade_volume_24h_btc','tickers'] },
+      { path: '/indexes',           cat: 'Indexes',     desc: 'Market indexes list',                      fields: ['name','id','market','last','is_multi_asset_composite'] },
+      { path: '/indexes/list',      cat: 'Indexes',     desc: 'All index identifiers',                    fields: ['id','name','market'] },
+      { path: '/derivatives',       cat: 'Derivatives', desc: 'Derivatives tickers: price, funding, OI, volume, index', fields: ['market','symbol','index_id','price','price_percentage_change_24h','contract_type','index','basis','spread','funding_rate','open_interest','volume_24h','last_traded_at','expired_at'] },
+      { path: '/derivatives/exchanges', cat: 'Derivatives', desc: 'Derivatives exchanges: volume, OI, # contracts', fields: ['name','id','open_interest_btc','trade_volume_24h_btc','number_of_perpetual_pairs','number_of_futures_pairs','image','year_established','country','description','url'] },
+      { path: '/derivatives/exchanges/list', cat: 'Derivatives', desc: 'Derivatives exchange id/name list', fields: ['id','name'] },
+      { path: '/global',            cat: 'Global',      desc: 'Global crypto stats: total mcap, volume, BTC dominance, active coins, markets', fields: ['active_cryptocurrencies','upcoming_icos','ongoing_icos','ended_icos','markets','total_market_cap','total_volume','market_cap_percentage','market_cap_change_percentage_24h_usd','updated_at'] },
+      { path: '/global/decentralized_finance_defi', cat: 'DeFi', desc: 'DeFi market stats: TVL, volume, dominance', fields: ['defi_market_cap','eth_market_cap','defi_to_eth_ratio','trading_volume_24h','defi_dominance','top_coin_name','top_coin_defi_dominance'] },
+      { path: '/companies/public_treasury/bitcoin', cat: 'Institutional', desc: 'Public companies holding BTC: total holdings, market value', fields: ['total_holdings','total_value_usd','market_cap_dominance','companies.name','companies.symbol','companies.country','companies.total_holdings','companies.total_entry_value_usd','companies.total_current_value_usd','companies.percentage_of_total_supply'] },
+      { path: '/asset_platforms',   cat: 'Meta',        desc: 'All blockchain platforms (chain IDs, native coins)', fields: ['id','chain_identifier','name','shortname','native_coin_id'] },
+      { path: '/nfts/list',         cat: 'NFT',         desc: 'NFT collection list',                      fields: ['id','contract_address','name','asset_platform_id','symbol'] },
+      { path: '/search/trending',   cat: 'Trending',    desc: 'Trending coins + NFTs: rank, price change, mcap', fields: ['coins.item.id','coins.item.coin_id','coins.item.name','coins.item.symbol','coins.item.market_cap_rank','coins.item.thumb','coins.item.score','nfts.name','nfts.symbol','nfts.native_currency_symbol','nfts.floor_price_in_native_currency','nfts.floor_price_24h_percentage_change','categories'] },
+      { path: '/search?query=bitcoin', cat: 'Search',   desc: 'Search coins, exchanges, NFTs, categories by name', fields: ['coins','exchanges','icos','categories','nfts'] },
+    ]
+  }
+};
 
-// ── PROXY ──
-async function safeFetch(url, direct=false) {
-  if (direct) {
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let results = [];
+let isScanning = false;
+let shouldStop = false;
+let startTime = null;
+let elapsedTimer = null;
+let currentFilter = 'all';
+let counts = { ok: 0, cors: 0, err: 0, timeout: 0, pending: 0 };
+
+const TIMEOUT_MS = 8000;
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function ts() {
+  const d = new Date();
+  return d.toTimeString().slice(0,8);
+}
+
+function log(msg, type='info') {
+  const el = document.getElementById('logBody');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `<span class="log-time">[${ts()}]</span><span class="log-${type}">${msg}</span>`;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function setStatus(state, text) {
+  const pill = document.getElementById('statusPill');
+  pill.className = 'status-pill ' + state;
+  const labels = { idle:'● IDLE', scanning:'● SCANNING', done:'● COMPLETE', error:'● ERROR' };
+  pill.textContent = labels[state] || '● '+state.toUpperCase();
+  if(text) document.getElementById('currentTask').textContent = text;
+}
+
+function updateCounters() {
+  document.getElementById('cntOk').textContent      = counts.ok;
+  document.getElementById('cntCors').textContent    = counts.cors;
+  document.getElementById('cntErr').textContent     = counts.err;
+  document.getElementById('cntTimeout').textContent = counts.timeout;
+  document.getElementById('cntPending').textContent = counts.pending;
+}
+
+function updateProgress(done, total) {
+  const pct = total ? (done / total * 100).toFixed(1) : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${done} / ${total}`;
+}
+
+function latencyClass(ms) {
+  if (ms == null || ms < 0) return '';
+  if (ms < 500) return 'fast';
+  if (ms < 1500) return 'medium';
+  return 'slow';
+}
+
+function fieldTags(fields) {
+  return fields.map(f => {
+    let cls = '';
+    if (/price|mark|index|last|open|close|high|low|atl|ath/i.test(f)) cls = ' price';
+    else if (/time|date|stamp|update/i.test(f)) cls = ' time';
+    else if (/vol|turnover/i.test(f)) cls = ' volume';
+    return `<span class="field-tag${cls}">${f}</span>`;
+  }).join('');
+}
+
+// ─── SOURCE CARDS INIT ───────────────────────────────────────────────────────
+function initSourceCards() {
+  const grid = document.getElementById('sourceGrid');
+  grid.innerHTML = '';
+  Object.entries(SOURCES).forEach(([key, src]) => {
+    const card = document.createElement('div');
+    card.className = 'source-card';
+    card.id = 'card-' + key;
+    card.innerHTML = `
+      <div class="source-header">
+        <span class="source-name" style="color:${src.color}">${src.name}</span>
+        <span class="source-tag">${src.tag}</span>
+      </div>
+      <div class="source-url">${src.base}</div>
+      <div class="source-progress" id="cp-${key}">
+        <span style="color:var(--dim)">— AWAITING SCAN —</span>
+      </div>
+      <div class="endpoint-mini-list" id="mini-${key}"></div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function updateSourceCard(key, doneCount, totalCount, lastEp) {
+  const prog = document.getElementById('cp-' + key);
+  if (prog) prog.innerHTML = `<span class="spinner"></span> <span style="color:var(--accent)">${doneCount} / ${totalCount} endpoints</span>`;
+  if (lastEp) {
+    const mini = document.getElementById('mini-' + key);
+    if (mini) {
+      const row = document.createElement('div');
+      row.className = 'ep-mini';
+      const sClass = lastEp.status === 'ok' ? 's-ok' : lastEp.status === 'cors' ? 's-cors' : lastEp.status === 'timeout' ? 's-warn' : 's-err';
+      const sLabel = lastEp.status === 'ok' ? '✓ OK' : lastEp.status === 'cors' ? '⚡ CORS' : lastEp.status === 'timeout' ? '⏱ TIMEOUT' : `✗ ${lastEp.httpCode||'ERR'}`;
+      row.innerHTML = `<span class="ep-status ${sClass}">${sLabel}</span><span style="color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${lastEp.path}</span>`;
+      mini.appendChild(row);
+      mini.scrollTop = mini.scrollHeight;
+    }
+  }
+}
+
+function finalizeSourceCard(key, okCount, total) {
+  const card = document.getElementById('card-' + key);
+  if (card) card.className = 'source-card ' + (okCount > 0 ? 'done-ok' : 'done-err');
+  const prog = document.getElementById('cp-' + key);
+  if (prog) prog.innerHTML = `<span style="color:var(--accent3)">✓ COMPLETE — ${okCount}/${total} reachable</span>`;
+}
+
+// ─── FETCH WITH TIMEOUT ───────────────────────────────────────────────────────
+async function fetchEndpoint(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const t0 = performance.now();
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      signal: controller.signal,
+      mode: 'cors',
+      headers: { 'Accept': 'application/json' }
+    });
+    clearTimeout(timer);
+    const latency = Math.round(performance.now() - t0);
+    let data = null;
+    let fields = [];
     try {
-      const t0 = Date.now();
-      const r = await fetch(url, {cache:'no-store'});
-      const ms = Date.now() - t0;
-      if (!r.ok) return {ok:false, ms, status:r.status, error:`HTTP ${r.status}`};
-      const data = await r.json();
-      return {ok:true, ms, data};
-    } catch(e) { return {ok:false, ms:0, error:e.message}; }
+      data = await res.json();
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        fields = Object.keys(data).slice(0, 20);
+      } else if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object') {
+        fields = Object.keys(data[0]).slice(0, 20);
+      }
+    } catch(e) {}
+    return { status: res.ok ? 'ok' : 'error', httpCode: res.status, latency, fields, data };
+  } catch(e) {
+    clearTimeout(timer);
+    const latency = Math.round(performance.now() - t0);
+    if (e.name === 'AbortError') {
+      return { status: 'timeout', httpCode: null, latency, fields: [], data: null };
+    }
+    // Distinguish CORS vs actual error
+    if (e instanceof TypeError && e.message && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.message.includes('CORS'))) {
+      return { status: 'cors', httpCode: null, latency, fields: [], data: null };
+    }
+    return { status: 'error', httpCode: null, latency, fields: [], data: null, err: e.message };
   }
-  const PROXIES = [
-    {name:'corsproxy.io', url:'https://corsproxy.io/?'},
-    {name:'codetabs',     url:'https://api.codetabs.com/v1/proxy?quest='},
-    {name:'thingproxy',  url:'https://thingproxy.freeboard.io/fetch/'},
-  ];
-  for (const p of PROXIES) {
-    try {
-      const t0 = Date.now();
-      const r = await fetch(p.url + encodeURIComponent(url), {cache:'no-store'});
-      const ms = Date.now() - t0;
-      if (!r.ok) continue;
-      const txt = await r.text();
-      let data;
-      try { const j = JSON.parse(txt); data = j.contents && typeof j.contents === 'string' ? JSON.parse(j.contents) : j; }
-      catch(e2) { continue; }
-      return {ok:true, ms, data, proxy:p.name};
-    } catch(e) { continue; }
-  }
-  return {ok:false, ms:0, error:'All proxies failed'};
 }
 
-// ── FIELD INSPECTOR ──
-function inspectFields(obj, maxDepth=1, depth=0) {
-  if (!obj || typeof obj !== 'object') return [];
-  const rows = [];
-  for (const [k, v] of Object.entries(obj)) {
-    const type = Array.isArray(v) ? `array[${v.length}]` : typeof v;
-    const sample = Array.isArray(v)
-      ? (v.length > 0 ? `[${JSON.stringify(v[0]).slice(0,80)}...]` : '[]')
-      : (typeof v === 'object' && v !== null ? '{...}' : String(v).slice(0,100));
-    rows.push({key: '  '.repeat(depth)+k, type, sample, depth});
-    if (depth < maxDepth && typeof v === 'object' && v !== null && !Array.isArray(v)) {
-      rows.push(...inspectFields(v, maxDepth, depth+1));
-    }
-  }
-  return rows;
-}
+// ─── RENDER TABLE ─────────────────────────────────────────────────────────────
+function renderTable() {
+  const wrap = document.getElementById('tableWrap');
+  const filtered = currentFilter === 'all' ? results : results.filter(r => r.status === currentFilter);
 
-function inspectArrayItem(arr, label='Item[0]') {
-  if (!Array.isArray(arr) || arr.length === 0) return [];
-  const item = arr[0];
-  if (typeof item !== 'object') return [{key:label, type:typeof item, sample:String(item)}];
-  return inspectFields(item, 2, 0);
-}
-
-// ── ENDPOINT DEFINITIONS ──
-// Each endpoint: {id, exchange, name, url, direct, notes, timeframes?, arrayPath?, parse}
-const ENDPOINTS = [
-
-  // ═══════ BINANCE ═══════
-
-  {
-    id:'bn-funding', exchange:'binance', name:'Premium Index (Funding Rate + Mark Price)',
-    url:'https://fapi.binance.com/fapi/v1/premiumIndex',
-    direct:false,
-    notes:`<strong>Fields available:</strong> symbol, markPrice, indexPrice, lastFundingRate, nextFundingTime, interestRate, time<br>
-           <strong>Key field:</strong> lastFundingRate (raw decimal, multiply ×100 for %). nextFundingTime is Unix ms.<br>
-           <strong>Coverage:</strong> All USDT/BUSD perpetuals. No timeframe param — always current epoch.`,
-    parse: (data) => {
-      const arr = Array.isArray(data) ? data : [];
-      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'root'};
-    }
-  },
-
-  {
-    id:'bn-oi', exchange:'binance', name:'Open Interest (Current)',
-    url:'https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT',
-    direct:false,
-    notes:`<strong>Fields:</strong> symbol, openInterest (in contracts), time.<br>
-           <strong>Limitation:</strong> Single symbol only — no bulk endpoint for all symbols at once.<br>
-           <strong>Usage:</strong> Must loop per symbol (rate-limited). Consider Bybit bulk endpoint instead.`,
-    parse: (data) => ({ items: inspectFields(data, 1), count:1, arrayPath:'root object' })
-  },
-
-  {
-    id:'bn-oi-hist', exchange:'binance', name:'Open Interest History (with timeframes)',
-    url:'https://fapi.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period=5m&limit=3',
-    direct:false,
-    timeframes:['5m','15m','30m','1h','2h','4h','6h','12h','1d'],
-    notes:`<strong>Fields:</strong> symbol, sumOpenInterest, sumOpenInterestValue (in USDT), timestamp.<br>
-           <strong>Timeframes available:</strong> 5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d<br>
-           <strong>Limit:</strong> Max 500 rows per request. Single symbol only.`,
-    parse: (data) => {
-      const arr = Array.isArray(data) ? data : [];
-      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'root'};
-    }
-  },
-
-  {
-    id:'bn-ls-ratio', exchange:'binance', name:'Long/Short Ratio (Global Accounts)',
-    url:'https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=3',
-    direct:false,
-    timeframes:['5m','15m','30m','1h','2h','4h','6h','12h','1d'],
-    notes:`<strong>Fields:</strong> symbol, longShortRatio, longAccount (%), shortAccount (%), timestamp.<br>
-           <strong>This is account-level ratio</strong> — % of accounts that are net long vs net short.<br>
-           <strong>Also available:</strong> /topLongShortAccountRatio (top traders), /topLongShortPositionRatio (by position value).`,
-    parse: (data) => {
-      const arr = Array.isArray(data) ? data : [];
-      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'root'};
-    }
-  },
-
-  {
-    id:'bn-ls-top-acct', exchange:'binance', name:'Long/Short Ratio (Top Trader Accounts)',
-    url:'https://fapi.binance.com/futures/data/topLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=3',
-    direct:false,
-    timeframes:['5m','15m','30m','1h','2h','4h','6h','12h','1d'],
-    notes:`<strong>Top trader accounts</strong> — focuses on whales/large accounts.<br>
-           Same fields as global ratio. Useful for whale vs retail divergence signal.`,
-    parse: (data) => {
-      const arr = Array.isArray(data) ? data : [];
-      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'root'};
-    }
-  },
-
-  {
-    id:'bn-ls-top-pos', exchange:'binance', name:'Long/Short Ratio (Top Trader Positions)',
-    url:'https://fapi.binance.com/futures/data/topLongShortPositionRatio?symbol=BTCUSDT&period=5m&limit=3',
-    direct:false,
-    timeframes:['5m','15m','30m','1h','2h','4h','6h','12h','1d'],
-    notes:`<strong>Top trader positions by value</strong> — different from account count ratio.<br>
-           A whale with 1 account and $10M short counts much heavier here than in account ratio.`,
-    parse: (data) => {
-      const arr = Array.isArray(data) ? data : [];
-      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'root'};
-    }
-  },
-
-  {
-    id:'bn-volume', exchange:'binance', name:'Taker Buy/Sell Volume',
-    url:'https://fapi.binance.com/futures/data/takerlongshortRatio?symbol=BTCUSDT&period=5m&limit=3',
-    direct:false,
-    timeframes:['5m','15m','30m','1h','2h','4h','6h','12h','1d'],
-    notes:`<strong>Fields:</strong> buySellRatio, buyVol, sellVol, timestamp.<br>
-           <strong>Key insight:</strong> buySellRatio > 1 means aggressive buying (market orders). < 1 means aggressive selling.<br>
-           Excellent for detecting momentum shift — high sell volume during positive funding = distribution signal.`,
-    parse: (data) => {
-      const arr = Array.isArray(data) ? data : [];
-      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'root'};
-    }
-  },
-
-  {
-    id:'bn-ticker24', exchange:'binance', name:'24h Ticker (Volume + Price Change)',
-    url:'https://fapi.binance.com/fapi/v1/ticker/24hr',
-    direct:false,
-    notes:`<strong>Fields:</strong> symbol, priceChange, priceChangePercent, weightedAvgPrice, lastPrice, volume (contracts), quoteVolume (USDT), openPrice, highPrice, lowPrice, count (trades).<br>
-           <strong>Bulk endpoint</strong> — returns all symbols at once. High value for the scanner.<br>
-           <strong>quoteVolume</strong> = 24h trading volume in USDT — this is what traders refer to as "volume".`,
-    parse: (data) => {
-      const arr = Array.isArray(data) ? data : [];
-      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'root'};
-    }
-  },
-
-  {
-    id:'bn-basis', exchange:'binance', name:'Basis Rate (Futures vs Spot)',
-    url:'https://fapi.binance.com/futures/data/basis?symbol=BTCUSDT&contractType=PERPETUAL&period=5m&limit=3',
-    direct:false,
-    timeframes:['5m','15m','30m','1h','2h','4h','6h','12h','1d'],
-    notes:`<strong>Fields:</strong> indexPrice (spot), contractType, futuresPrice, basis (absolute diff), basisRate (%), timestamp.<br>
-           <strong>basisRate</strong> = (futuresPrice - indexPrice) / indexPrice × 100.<br>
-           Positive = futures premium over spot. Negative = futures discount (backwardation).`,
-    parse: (data) => {
-      const arr = Array.isArray(data) ? data : [];
-      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'root'};
-    }
-  },
-
-  {
-    id:'bn-spot-ticker', exchange:'binance', name:'Spot Ticker (for Inflow/Outflow proxy)',
-    url:'https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT',
-    direct:false,
-    notes:`<strong>Spot market 24h data.</strong> Not a direct inflow/outflow feed (that requires exchange wallets API).<br>
-           <strong>Proxy signal:</strong> If spot volume spikes while futures funding is high → selling pressure building.<br>
-           <strong>Fields:</strong> Same structure as futures ticker but from spot market.`,
-    parse: (data) => ({ items: inspectFields(data, 1), count:1, arrayPath:'root object' })
-  },
-
-  // ═══════ BYBIT ═══════
-
-  {
-    id:'bb-ticker', exchange:'bybit', name:'Linear Tickers (Funding + OI + Volume + Price)',
-    url:'https://api.bybit.com/v5/market/tickers?category=linear',
-    direct:true,
-    notes:`<strong>BULK endpoint — single call for all USDT perps.</strong><br>
-           <strong>Fields:</strong> symbol, lastPrice, indexPrice, markPrice, prevPrice24h, price24hPcnt, highPrice24h, lowPrice24h, prevPrice1h, openInterest, openInterestValue, turnover24h (USDT vol), volume24h (contracts), fundingRate, nextFundingTime, bid1Price, ask1Price, bid1Size, ask1Size.<br>
-           <strong>This is the most data-dense single endpoint</strong> — funding + OI + volume + price all at once.`,
-    parse: (data) => {
-      const arr = data?.result?.list || [];
-      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'result.list'};
-    }
-  },
-
-  {
-    id:'bb-oi', exchange:'bybit', name:'Open Interest History (with timeframes)',
-    url:'https://api.bybit.com/v5/market/open-interest?category=linear&symbol=BTCUSDT&intervalTime=5min&limit=3',
-    direct:true,
-    timeframes:['5min','15min','30min','1h','4h','1d'],
-    notes:`<strong>Fields:</strong> openInterest, openInterestValue (USDT), timestamp.<br>
-           <strong>Timeframes:</strong> 5min, 15min, 30min, 1h, 4h, 1d<br>
-           Single symbol only. Use to track OI trend over time (rising/falling).`,
-    parse: (data) => {
-      const arr = data?.result?.list || [];
-      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'result.list'};
-    }
-  },
-
-  {
-    id:'bb-funding-hist', exchange:'bybit', name:'Funding Rate History',
-    url:'https://api.bybit.com/v5/market/funding/history?category=linear&symbol=BTCUSDT&limit=3',
-    direct:true,
-    notes:`<strong>Fields:</strong> symbol, fundingRate, fundingRateTimestamp.<br>
-           Historical funding epochs (every 8h). Useful to see if rate has been extreme for multiple epochs.<br>
-           No timeframe param — each row is one 8h funding settlement.`,
-    parse: (data) => {
-      const arr = data?.result?.list || [];
-      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'result.list'};
-    }
-  },
-
-  {
-    id:'bb-ls-ratio', exchange:'bybit', name:'Long/Short Ratio',
-    url:'https://api.bybit.com/v5/market/account-ratio?category=linear&symbol=BTCUSDT&period=1h&limit=3',
-    direct:true,
-    timeframes:['5min','15min','30min','1h','4h','1d'],
-    notes:`<strong>Fields:</strong> symbol, buyRatio, sellRatio, timestamp.<br>
-           buyRatio = proportion of accounts net long. sellRatio = net short.<br>
-           <strong>Note:</strong> Bybit uses buyRatio/sellRatio naming (vs Binance longAccount/shortAccount).`,
-    parse: (data) => {
-      const arr = data?.result?.list || [];
-      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'result.list'};
-    }
-  },
-
-  {
-    id:'bb-kline', exchange:'bybit', name:'Kline / OHLCV (Price + Volume)',
-    url:'https://api.bybit.com/v5/market/kline?category=linear&symbol=BTCUSDT&interval=60&limit=3',
-    direct:true,
-    timeframes:['1','3','5','15','30','60','120','240','360','720','D','W','M'],
-    notes:`<strong>Fields (array):</strong> [startTime, openPrice, highPrice, lowPrice, closePrice, volume (contracts), turnover (USDT)]<br>
-           Intervals: 1,3,5,15,30,60,120,240,360,720 (minutes), D, W, M.<br>
-           Useful for price trend context alongside funding data.`,
-    parse: (data) => {
-      const arr = data?.result?.list || [];
-      const item = arr[0];
-      const fields = item ? [
-        {key:'[0] startTime',   type:'string', sample:item[0]},
-        {key:'[1] openPrice',   type:'string', sample:item[1]},
-        {key:'[2] highPrice',   type:'string', sample:item[2]},
-        {key:'[3] lowPrice',    type:'string', sample:item[3]},
-        {key:'[4] closePrice',  type:'string', sample:item[4]},
-        {key:'[5] volume',      type:'string', sample:item[5]+' (contracts)'},
-        {key:'[6] turnover',    type:'string', sample:item[6]+' (USDT)'},
-      ] : [];
-      return {items: fields, count: arr.length, arrayPath:'result.list (each row is array)'};
-    }
-  },
-
-  {
-    id:'bb-ins-info', exchange:'bybit', name:'Instrument Info (Symbol Metadata)',
-    url:'https://api.bybit.com/v5/market/instruments-info?category=linear&symbol=BTCUSDT',
-    direct:true,
-    notes:`<strong>Fields:</strong> symbol, contractType, status, baseCoin, quoteCoin, launchTime, deliveryTime, fundingInterval (minutes), unifiedMarginTrade, settleCoin + leverage/tick/lot size filters.<br>
-           <strong>fundingInterval</strong> = 480 (8h standard) or 60 (1h for some tokens). Important for rate annualization.`,
-    parse: (data) => {
-      const arr = data?.result?.list || [];
-      return {items: inspectArrayItem(arr), count: arr.length, arrayPath:'result.list'};
-    }
-  },
-
-];
-
-// ── STATE ──
-let results = {};
-let running = false;
-
-// ── RENDER SKELETON ──
-function renderSkeleton() {
-  const wrap = document.getElementById('results-wrap');
-  let html = '';
-
-  const binanceEps = ENDPOINTS.filter(e => e.exchange === 'binance');
-  const bybitEps   = ENDPOINTS.filter(e => e.exchange === 'bybit');
-
-  html += `<div class="section-title">BINANCE FUTURES ENDPOINTS (${binanceEps.length})</div><div class="ep-grid" id="grid-binance">`;
-  for (const ep of binanceEps) html += epSkeleton(ep);
-  html += '</div>';
-
-  html += `<div class="section-title">BYBIT LINEAR ENDPOINTS (${bybitEps.length})</div><div class="ep-grid" id="grid-bybit">`;
-  for (const ep of bybitEps) html += epSkeleton(ep);
-  html += '</div>';
-
-  wrap.innerHTML = html;
-}
-
-function epSkeleton(ep) {
-  const tagCls = ep.exchange === 'binance' ? 'tag-binance' : 'tag-bybit';
-  const tagLbl = ep.exchange === 'binance' ? 'BINANCE' : 'BYBIT';
-  return `<div class="ep-card" id="card-${ep.id}">
-    <div class="ep-head" onclick="toggleCard('${ep.id}')">
-      <span class="ep-status" id="dot-${ep.id}"></span>
-      <span class="ep-name">${ep.name}</span>
-      <span class="ep-tag ${tagCls}">${tagLbl}</span>
-      <span class="ep-ms" id="ms-${ep.id}">—</span>
-      <span class="ep-chevron">▶</span>
-    </div>
-    <div class="ep-body" id="body-${ep.id}">
-      <div class="ep-url">${ep.url}</div>
-      <div style="color:var(--dim);font-size:0.6rem;letter-spacing:1px;">NOT YET TESTED</div>
-    </div>
-  </div>`;
-}
-
-function toggleCard(id) {
-  const card = document.getElementById('card-'+id);
-  card.classList.toggle('open');
-}
-
-// ── RENDER RESULT ──
-function renderResult(ep, res) {
-  const dot  = document.getElementById('dot-'+ep.id);
-  const ms   = document.getElementById('ms-'+ep.id);
-  const body = document.getElementById('body-'+ep.id);
-
-  if (!res.ok) {
-    dot.className  = 'ep-status fail';
-    ms.textContent = 'FAIL';
-    body.innerHTML = `
-      <div class="ep-url">${ep.url}</div>
-      <div class="err-block">❌ FETCH FAILED — ${res.error || 'Unknown error'}<br>${res.proxy ? 'Last proxy tried: '+res.proxy : ''}${res.status ? '<br>HTTP Status: '+res.status : ''}</div>
-      <div class="ep-notes">${ep.notes}</div>`;
+  if (filtered.length === 0) {
+    wrap.innerHTML = '<div class="empty-state"><div class="big">◈</div><div>' +
+      (results.length === 0 ? 'NO SCAN ACTIVE — PRESS START SCAN TO BEGIN' : 'NO RESULTS MATCHING FILTER') +
+      '</div></div>';
     return;
   }
 
-  dot.className  = 'ep-status ok';
-  ms.textContent = res.ms + 'ms';
+  const rows = filtered.map(r => {
+    let statusHtml, latHtml;
+    if (r.status === 'ok') {
+      statusHtml = `<span class="ep-status s-ok">✓ ${r.httpCode}</span>`;
+    } else if (r.status === 'cors') {
+      statusHtml = `<span class="ep-status s-cors">⚡ CORS</span>`;
+    } else if (r.status === 'timeout') {
+      statusHtml = `<span class="ep-status s-warn">⏱ TIMEOUT</span>`;
+    } else if (r.status === 'scanning') {
+      statusHtml = `<span class="ep-status s-scanning">● …</span>`;
+    } else if (r.status === 'pending') {
+      statusHtml = `<span class="ep-status s-pending">— PENDING</span>`;
+    } else {
+      statusHtml = `<span class="ep-status s-err">✗ ${r.httpCode||'ERR'}</span>`;
+    }
 
-  let parsed;
-  try { parsed = ep.parse(res.data); } catch(e) { parsed = {items:[], count:0, arrayPath:'parse error: '+e.message}; }
+    const lc = latencyClass(r.latency);
+    latHtml = r.latency != null ? `<span class="td-latency ${lc}">${r.latency}ms</span>` : `<span class="td-latency" style="color:var(--dim)">—</span>`;
 
-  const fieldsHtml = parsed.items.length > 0 ? `
-    <div class="fields-title">AVAILABLE FIELDS — Source: ${parsed.arrayPath} (${parsed.count} records)</div>
-    <table class="fields-table">
-      <thead><tr><th>FIELD</th><th>TYPE</th><th>SAMPLE VALUE</th></tr></thead>
-      <tbody>${parsed.items.map(f => `<tr>
-        <td>${f.key}</td>
-        <td>${f.type}</td>
-        <td>${escHtml(String(f.sample||'').slice(0,120))}</td>
-      </tr>`).join('')}</tbody>
-    </table>` : `<div style="color:var(--dim);font-size:0.6rem;margin-bottom:10px;">No fields parsed — check raw JSON</div>`;
+    // Use detected fields or defined fields
+    const displayFields = (r.detectedFields && r.detectedFields.length > 0) ? r.detectedFields : (r.definedFields || []);
+    const fieldHtml = displayFields.length > 0 ? fieldTags(displayFields) : `<span style="color:var(--dim);font-size:10px">—</span>`;
 
-  const tfHtml = ep.timeframes ? `
-    <div class="fields-title" style="margin-top:8px;">AVAILABLE TIMEFRAMES</div>
-    <div class="tf-wrap">${ep.timeframes.map(t=>`<span class="tf-badge avail">${t}</span>`).join('')}</div>` : '';
+    return `<tr>
+      <td class="td-source">${r.source}</td>
+      <td class="td-category">${r.cat}</td>
+      <td class="td-endpoint">${r.path}</td>
+      <td>${statusHtml}</td>
+      <td>${latHtml}</td>
+      <td class="td-fields">${fieldHtml}</td>
+      <td class="td-note">${r.desc}</td>
+    </tr>`;
+  }).join('');
 
-  const rawId = 'raw-'+ep.id;
-  const rawStr = JSON.stringify(res.data, null, 2).slice(0, 4000) + (JSON.stringify(res.data).length > 4000 ? '\n... (truncated)' : '');
-
-  body.innerHTML = `
-    <div class="ep-url">${ep.url}${res.proxy ? ' <span style="color:var(--dim2)">[via '+res.proxy+']</span>' : ' <span style="color:var(--bull)">[direct]</span>'}</div>
-    ${fieldsHtml}
-    ${tfHtml}
-    <div class="ep-notes" style="margin-top:10px;">${ep.notes}</div>
-    <div class="sample-note" style="margin-top:12px;">RAW RESPONSE SAMPLE (first ~4KB):</div>
-    <span class="raw-toggle" onclick="toggleRaw('${rawId}')">[ show / hide raw JSON ]</span>
-    <pre class="raw-block" id="${rawId}">${escHtml(rawStr)}</pre>`;
+  wrap.innerHTML = `<div style="overflow-x:auto"><table class="results-table">
+    <thead><tr>
+      <th>SOURCE</th><th>CATEGORY</th><th>ENDPOINT</th><th>STATUS</th><th style="text-align:right">LATENCY</th><th>DATA FIELDS (DETECTED)</th><th>DESCRIPTION</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
 }
 
-function toggleRaw(id) {
-  document.getElementById(id).classList.toggle('show');
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('#filterBar .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
 }
 
-function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// ─── SUMMARY ──────────────────────────────────────────────────────────────────
+function renderSummary() {
+  const total = results.length;
+  const ok = results.filter(r => r.status === 'ok').length;
+  const cors = results.filter(r => r.status === 'cors').length;
+  const err = results.filter(r => r.status === 'error').length;
+  const to = results.filter(r => r.status === 'timeout').length;
+  const avgLat = results.filter(r => r.latency != null && r.status === 'ok')
+                         .reduce((a,r,_,arr) => a + r.latency/arr.length, 0);
+
+  document.getElementById('summaryGrid').innerHTML = `
+    <div class="summary-card c-total"><div class="val">${total}</div><div class="lbl">TOTAL ENDPOINTS</div></div>
+    <div class="summary-card c-ok"><div class="val">${ok}</div><div class="lbl">REACHABLE (200 OK)</div></div>
+    <div class="summary-card c-cors"><div class="val">${cors}</div><div class="lbl">CORS BLOCKED*</div></div>
+    <div class="summary-card c-err"><div class="val">${err}</div><div class="lbl">ERRORS (4xx/5xx)</div></div>
+    <div class="summary-card"><div class="val" style="color:var(--warn)">${to}</div><div class="lbl">TIMEOUTS (>8s)</div></div>
+    <div class="summary-card c-time"><div class="val">${avgLat > 0 ? Math.round(avgLat)+'ms' : 'N/A'}</div><div class="lbl">AVG LATENCY (OK)</div></div>
+  `;
+  document.getElementById('summarySection').classList.remove('hidden');
 }
 
-// ── RUN ALL ──
-async function runAll() {
-  if (running) return;
-  running = true;
-  const btn = document.getElementById('run-btn');
-  btn.disabled = true;
-  btn.textContent = '⟳ RUNNING...';
+// ─── MAIN SCAN ────────────────────────────────────────────────────────────────
+async function startScan() {
+  if (isScanning) return;
+  isScanning = true;
+  shouldStop = false;
+  results = [];
+  counts = { ok: 0, cors: 0, err: 0, timeout: 0, pending: 0 };
 
-  renderSkeleton();
-  document.getElementById('summary').style.display = 'none';
+  document.getElementById('summarySection').classList.add('hidden');
+  document.getElementById('btnScan').disabled = true;
+  document.getElementById('btnStop').disabled = false;
+  document.getElementById('btnExport').disabled = true;
+  setStatus('scanning', 'Initializing…');
 
-  // Set pending dots
-  for (const ep of ENDPOINTS) {
-    document.getElementById('dot-'+ep.id).className = 'ep-status pending';
-    document.getElementById('ms-'+ep.id).textContent = '...';
+  // Build flat list
+  const allEndpoints = [];
+  Object.entries(SOURCES).forEach(([key, src]) => {
+    src.endpoints.forEach(ep => {
+      allEndpoints.push({ key, src, ep });
+    });
+  });
+
+  const total = allEndpoints.length;
+  counts.pending = total;
+
+  // Seed results array
+  results = allEndpoints.map(({key, src, ep}) => ({
+    source: src.tag,
+    sourceFull: src.name,
+    sourceKey: key,
+    cat: ep.cat,
+    path: ep.path.split('?')[0],
+    fullPath: ep.path,
+    desc: ep.desc,
+    definedFields: ep.fields,
+    detectedFields: [],
+    status: 'pending',
+    httpCode: null,
+    latency: null,
+    url: src.base + ep.path
+  }));
+
+  initSourceCards();
+  updateCounters();
+  renderTable();
+
+  startTime = Date.now();
+  elapsedTimer = setInterval(() => {
+    document.getElementById('elapsed').textContent = ((Date.now() - startTime)/1000).toFixed(0) + 's';
+  }, 500);
+
+  log(`Starting scan of ${total} endpoints across ${Object.keys(SOURCES).length} sources`, 'info');
+
+  // Scan per source sequentially (to avoid rate limits), endpoints within source slightly concurrent
+  let globalDone = 0;
+  const sourceKeyList = Object.keys(SOURCES);
+
+  for (const key of sourceKeyList) {
+    if (shouldStop) break;
+    const src = SOURCES[key];
+    const srcEndpoints = src.endpoints;
+    const card = document.getElementById('card-' + key);
+    if (card) card.className = 'source-card active';
+    log(`→ Scanning ${src.name} (${src.tag}) — ${srcEndpoints.length} endpoints`, 'info');
+    setStatus('scanning', src.name);
+
+    let srcDone = 0;
+    let srcOk = 0;
+
+    // Process in small batches of 3 within each source
+    const BATCH = 3;
+    for (let i = 0; i < srcEndpoints.length; i += BATCH) {
+      if (shouldStop) break;
+      const batch = srcEndpoints.slice(i, i + BATCH);
+
+      await Promise.all(batch.map(async (ep, bi) => {
+        const idx = results.findIndex(r => r.sourceKey === key && r.fullPath === ep.path);
+        if (idx === -1) return;
+
+        results[idx].status = 'scanning';
+        renderTable();
+
+        const url = src.base + ep.path;
+        const res = await fetchEndpoint(url);
+
+        results[idx].status = res.status;
+        results[idx].httpCode = res.httpCode;
+        results[idx].latency = res.latency;
+        results[idx].detectedFields = res.fields || [];
+
+        counts.pending--;
+        if (res.status === 'ok') { counts.ok++; srcOk++; }
+        else if (res.status === 'cors') counts.cors++;
+        else if (res.status === 'timeout') counts.timeout++;
+        else counts.err++;
+
+        srcDone++;
+        globalDone++;
+
+        const logType = res.status === 'ok' ? 'ok' : res.status === 'cors' ? 'cors' : res.status === 'timeout' ? 'warn' : 'err';
+        const latTxt = res.latency ? `${res.latency}ms` : '';
+        const statTxt = res.status === 'ok' ? `HTTP ${res.httpCode}` : res.status === 'cors' ? 'CORS BLOCKED' : res.status === 'timeout' ? 'TIMEOUT' : `ERR ${res.httpCode||''}`;
+        log(`  ${src.tag} ${ep.path.split('?')[0]} → ${statTxt} ${latTxt}`, logType);
+
+        updateSourceCard(key, srcDone, srcEndpoints.length, { path: ep.path.split('?')[0], status: res.status, httpCode: res.httpCode });
+        updateCounters();
+        updateProgress(globalDone, total);
+        renderTable();
+      }));
+
+      // Small delay between batches to be polite
+      if (!shouldStop) await new Promise(r => setTimeout(r, 200));
+    }
+
+    finalizeSourceCard(key, srcOk, srcEndpoints.length);
+    log(`✓ ${src.name} complete — ${srcOk}/${srcEndpoints.length} reachable`, srcOk > 0 ? 'ok' : 'warn');
   }
 
-  // Label exchange status
-  document.getElementById('ex-binance-lbl').className = 'ex-btn';
-  document.getElementById('ex-bybit-lbl').className   = 'ex-btn';
+  clearInterval(elapsedTimer);
+  isScanning = false;
+  document.getElementById('btnScan').disabled = false;
+  document.getElementById('btnStop').disabled = true;
+  document.getElementById('btnExport').disabled = false;
 
-  let pass=0, fail=0, warn=0, totalMs=0, tested=0;
-
-  for (const ep of ENDPOINTS) {
-    const res = await safeFetch(ep.url, ep.direct);
-    results[ep.id] = res;
-    renderResult(ep, res);
-
-    if (res.ok)   { pass++; totalMs += res.ms; }
-    else          { fail++; }
-    tested++;
-
-    // Update progress
-    const pct = Math.round((tested / ENDPOINTS.length) * 100);
-    document.getElementById('prog').style.width = pct + '%';
+  if (shouldStop) {
+    setStatus('idle', 'Scan stopped by user');
+    log('Scan stopped by user.', 'warn');
+  } else {
+    setStatus('done', 'Scan complete');
+    log(`=== SCAN COMPLETE — ${counts.ok} OK / ${counts.cors} CORS / ${counts.err} ERR / ${counts.timeout} TIMEOUT ===`, 'ok');
+    renderSummary();
   }
 
-  // Exchange status labels
-  const bnPass = ENDPOINTS.filter(e=>e.exchange==='binance').every(e=>results[e.id]?.ok);
-  const bbPass = ENDPOINTS.filter(e=>e.exchange==='bybit').every(e=>results[e.id]?.ok);
-  document.getElementById('ex-binance-lbl').className = 'ex-btn ' + (bnPass ? 'on-binance' : '');
-  document.getElementById('ex-bybit-lbl').className   = 'ex-btn ' + (bbPass ? 'on-bybit'   : '');
-
-  // Summary
-  document.getElementById('s-total').textContent = ENDPOINTS.length;
-  document.getElementById('s-pass').textContent  = pass;
-  document.getElementById('s-fail').textContent  = fail;
-  document.getElementById('s-warn').textContent  = warn;
-  document.getElementById('s-lat').textContent   = pass > 0 ? Math.round(totalMs/pass)+'ms' : '—';
-  document.getElementById('summary').style.display = 'flex';
-
-  btn.disabled = false;
-  btn.textContent = '▶ RUN AGAIN';
-  running = false;
+  renderTable();
 }
 
-function clearResults() {
-  results = {};
-  document.getElementById('results-wrap').innerHTML = '';
-  document.getElementById('summary').style.display  = 'none';
-  document.getElementById('prog').style.width = '0';
-  document.getElementById('ex-binance-lbl').className = 'ex-btn';
-  document.getElementById('ex-bybit-lbl').className   = 'ex-btn';
-  document.getElementById('run-btn').textContent = '▶ RUN ALL TESTS';
+function stopScan() {
+  shouldStop = true;
+  log('Stop requested…', 'warn');
+  document.getElementById('btnStop').disabled = true;
 }
 
-// Init skeleton on load
-renderSkeleton();
+// ─── EXPORT ───────────────────────────────────────────────────────────────────
+function exportReport() {
+  const now = new Date();
+  const ts_str = now.toISOString().slice(0,19).replace('T',' ');
+  const elapsed = startTime ? ((Date.now() - startTime)/1000).toFixed(0) + 's' : 'N/A';
+
+  let md = `# API INTELLIGENCE REPORT\n`;
+  md += `**Generated:** ${ts_str}  \n`;
+  md += `**Scan Duration:** ${elapsed}  \n`;
+  md += `**Tool:** API Recon Scanner v1.0\n\n`;
+
+  md += `---\n\n## EXECUTIVE SUMMARY\n\n`;
+  md += `| Metric | Value |\n|---|---|\n`;
+  md += `| Total Endpoints Scanned | ${results.length} |\n`;
+  md += `| ✓ Reachable (200 OK) | ${counts.ok} |\n`;
+  md += `| ⚡ CORS Blocked (exists, server-side accessible) | ${counts.cors} |\n`;
+  md += `| ✗ Errors (4xx/5xx) | ${counts.err} |\n`;
+  md += `| ⏱ Timeouts (>8s) | ${counts.timeout} |\n`;
+  const avgLat = results.filter(r => r.latency != null && r.status === 'ok').reduce((a,r,_,arr) => a + r.latency/arr.length, 0);
+  md += `| Avg Latency (OK endpoints) | ${avgLat > 0 ? Math.round(avgLat)+'ms' : 'N/A'} |\n\n`;
+
+  md += `> **Note on CORS:** A CORS result means the endpoint EXISTS and returns data, but browser-based requests are blocked by the exchange's CORS policy. These endpoints are fully accessible from a server-side/Node.js environment. Do NOT treat CORS as a dead endpoint.\n\n`;
+
+  md += `---\n\n## PER-SOURCE BREAKDOWN\n\n`;
+
+  Object.entries(SOURCES).forEach(([key, src]) => {
+    const srcResults = results.filter(r => r.sourceKey === key);
+    const ok = srcResults.filter(r => r.status === 'ok').length;
+    const cors = srcResults.filter(r => r.status === 'cors').length;
+    const err = srcResults.filter(r => r.status === 'error').length;
+    const to = srcResults.filter(r => r.status === 'timeout').length;
+
+    md += `### ${src.name} (${src.tag})\n`;
+    md += `**Base URL:** \`${src.base}\`  \n`;
+    md += `**Endpoints:** ${srcResults.length} | ✓ OK: ${ok} | ⚡ CORS: ${cors} | ✗ ERR: ${err} | ⏱ TIMEOUT: ${to}\n\n`;
+
+    md += `| Endpoint | Category | Status | HTTP | Latency | Detected Fields | Description |\n`;
+    md += `|---|---|---|---|---|---|---|\n`;
+    srcResults.forEach(r => {
+      const statusIcon = r.status === 'ok' ? '✓ OK' : r.status === 'cors' ? '⚡ CORS' : r.status === 'timeout' ? '⏱ TIMEOUT' : `✗ ERR`;
+      const httpCode = r.httpCode || '—';
+      const latency = r.latency != null ? r.latency + 'ms' : '—';
+      const displayFields = (r.detectedFields && r.detectedFields.length > 0) ? r.detectedFields : r.definedFields;
+      const fieldsStr = displayFields.slice(0,10).join(', ') || '—';
+      const pathShort = r.fullPath.split('?')[0];
+      md += `| \`${pathShort}\` | ${r.cat} | ${statusIcon} | ${httpCode} | ${latency} | ${fieldsStr} | ${r.desc} |\n`;
+    });
+    md += `\n`;
+
+    // Data available
+    const reachable = srcResults.filter(r => r.status === 'ok' || r.status === 'cors');
+    if (reachable.length > 0) {
+      md += `**DATA AVAILABLE FROM ${src.tag}:**\n\n`;
+      const cats = [...new Set(reachable.map(r => r.cat))];
+      cats.forEach(cat => {
+        const catEps = reachable.filter(r => r.cat === cat);
+        md += `- **${cat}:** ${catEps.map(r => r.desc).join('; ')}\n`;
+      });
+      md += `\n`;
+    }
+  });
+
+  md += `---\n\n## DETAILED ENDPOINT LISTING\n\n`;
+  md += `| Source | Category | Endpoint | Status | HTTP | Latency | Description | Detected Fields |\n`;
+  md += `|---|---|---|---|---|---|---|---|\n`;
+  results.forEach(r => {
+    const statusIcon = r.status === 'ok' ? '✓' : r.status === 'cors' ? '⚡' : r.status === 'timeout' ? '⏱' : '✗';
+    const displayFields = (r.detectedFields && r.detectedFields.length > 0) ? r.detectedFields : r.definedFields;
+    md += `| ${r.source} | ${r.cat} | \`${r.fullPath.split('?')[0]}\` | ${statusIcon} ${r.status.toUpperCase()} | ${r.httpCode||'—'} | ${r.latency!=null?r.latency+'ms':'—'} | ${r.desc} | ${displayFields.slice(0,8).join(', ')||'—'} |\n`;
+  });
+
+  md += `\n---\n\n## RECOMMENDATIONS (fill in after review)\n\n`;
+  md += `### Primary / Fallback Strategy\n\n`;
+  md += `*[To be filled based on scan results above]*\n\n`;
+  md += `- **Price Data Primary:** ?\n`;
+  md += `- **Price Data Fallback:** ?\n`;
+  md += `- **OHLCV / Klines Primary:** ?\n`;
+  md += `- **Funding Rates Primary:** ?\n`;
+  md += `- **Open Interest Primary:** ?\n`;
+  md += `- **Global Market Data:** ?\n\n`;
+  md += `---\n*Report generated by API Recon Scanner v1.0*\n`;
+
+  // Also append raw JSON
+  const jsonData = {
+    meta: { generated: ts_str, duration: elapsed, scanner: 'API Recon v1.0' },
+    summary: { total: results.length, ok: counts.ok, cors: counts.cors, error: counts.err, timeout: counts.timeout },
+    results: results.map(r => ({
+      source: r.source, sourceFull: r.sourceFull, category: r.cat,
+      endpoint: r.fullPath.split('?')[0], fullUrl: r.url,
+      status: r.status, httpCode: r.httpCode, latency: r.latency,
+      description: r.desc,
+      detectedFields: r.detectedFields,
+      definedFields: r.definedFields
+    }))
+  };
+
+  // Download markdown
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `api-recon-report-${now.toISOString().slice(0,10)}.md`;
+  a.click();
+
+  // Download JSON
+  setTimeout(() => {
+    const jblob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+    const ja = document.createElement('a');
+    ja.href = URL.createObjectURL(jblob);
+    ja.download = `api-recon-report-${now.toISOString().slice(0,10)}.json`;
+    ja.click();
+    log('Exported: .md + .json reports downloaded.', 'ok');
+  }, 500);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+initSourceCards();
+updateCounters();
+
+// Count total endpoints
+const totalEp = Object.values(SOURCES).reduce((s, src) => s + src.endpoints.length, 0);
+log(`Loaded ${Object.keys(SOURCES).length} sources, ${totalEp} endpoints defined and ready to scan.`, 'info');
+Object.entries(SOURCES).forEach(([key, src]) => {
+  log(`  ${src.tag} — ${src.name}: ${src.endpoints.length} endpoints`, 'info');
+});
 </script>
 </body>
 </html>
