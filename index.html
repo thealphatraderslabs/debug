@@ -823,6 +823,29 @@ const SOURCES = {
       { path: '/nfts/list',         cat: 'NFT',         desc: 'NFT collection list',                      fields: ['id','contract_address','name','asset_platform_id','symbol'] },
       { path: '/search/trending',   cat: 'Trending',    desc: 'Trending coins + NFTs: rank, price change, mcap', fields: ['coins.item.id','coins.item.coin_id','coins.item.name','coins.item.symbol','coins.item.market_cap_rank','coins.item.thumb','coins.item.score','nfts.name','nfts.symbol','nfts.native_currency_symbol','nfts.floor_price_in_native_currency','nfts.floor_price_24h_percentage_change','categories'] },
       { path: '/search?query=bitcoin', cat: 'Search',   desc: 'Search coins, exchanges, NFTs, categories by name', fields: ['coins','exchanges','icos','categories','nfts'] },
+
+      // ── CHAIN DETECTION TEST ──────────────────────────────────────────────
+      // Tests whether CoinGecko can return the blockchain platform a coin lives on.
+      // asset_platform_id = which chain (e.g. "ethereum", "binance-smart-chain", "solana")
+      // platforms = { chain_name: contract_address } — all chains the token is deployed on
+      // detail_platforms = { chain_name: { decimal_place, contract_address } }
+      // Using slim params to avoid fetching unnecessary market data (faster, smaller response).
+      { path: '/coins/bitcoin?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false',
+        cat: 'CHAIN DETECTION',
+        desc: '⛓ CHAIN TEST — asset_platform_id (which chain), platforms (contract per chain), detail_platforms (contract + decimals). Use this to detect ERC-20 / BEP-20 / SPL / etc.',
+        fields: ['asset_platform_id','platforms','detail_platforms','id','symbol','name','categories']
+      },
+
+      // ── CATEGORY DETECTION TEST ───────────────────────────────────────────
+      // Tests whether CoinGecko returns category tags for a coin.
+      // categories = string[] e.g. ["DeFi","Layer 1","Proof of Work","Store Of Value"]
+      // Same slim endpoint as above but focus is on the categories array.
+      // For a token like CHIP this might return ["Meme","BNB Chain","Gaming"] etc.
+      { path: '/coins/ethereum?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false',
+        cat: 'CATEGORY DETECTION',
+        desc: '🏷 CATEGORY TEST — categories[] array lists all CoinGecko tags for the coin (e.g. "DeFi", "Layer 1", "Meme", "Gaming", "BNB Chain Ecosystem"). Also tests asset_platform_id for an ERC-20 native coin.',
+        fields: ['categories','asset_platform_id','platforms','detail_platforms','id','symbol','name']
+      },
     ]
   }
 };
